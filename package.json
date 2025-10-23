@@ -1,0 +1,77 @@
+{
+  "name": "pdfannotations",
+  "widgetName": "Pdfannotations",
+  "version": "1.0.9",
+  "description": "PDF and DOCX Annotations Widget for Mendix - AWS S3 Integration with DOCX to PDF conversion",
+  "copyright": "Lowcode Labs",
+  "author": "Muka",
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "MIT",
+  "config": {
+    "projectPath": "./tests/testProject",
+    "mendixHost": "http://localhost:8080",
+    "developmentPort": 3000
+  },
+  "packagePath": "lowcode-labs",
+  "keywords": [
+    "mendix",
+    "widget",
+    "pdf",
+    "docx",
+    "annotations",
+    "react-pdf",
+    "aws-s3",
+    "document-conversion"
+  ],
+  "scripts": {
+    "start": "pluggable-widgets-tools start:server",
+    "dev": "pluggable-widgets-tools start:web",
+    "build": "pluggable-widgets-tools build:web",
+    "lint": "pluggable-widgets-tools lint",
+    "lint:fix": "pluggable-widgets-tools lint:fix",
+    "format": "pluggable-widgets-tools format",
+    "test": "pluggable-widgets-tools test:unit",
+    "prerelease": "npm run lint && npm run build",
+    "release": "pluggable-widgets-tools release:web",
+    "clean": "rimraf dist && rimraf node_modules/.cache"
+  },
+  "devDependencies": {
+    "@mendix/pluggable-widgets-tools": "^10.15.0",
+    "rimraf": "^5.0.0"
+  },
+  "dependencies": {
+    "classnames": "^2.3.2",
+    "crypto-js": "^4.2.0",
+    "jszip": "^3.10.1",
+    "pdfjs-dist": "^5.3.93",
+    "pdfmake": "^0.2.7",
+    "react-pdf": "^10.0.1",
+    "xlsx": "^0.18.5"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "resolutions": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-native": "0.72.7"
+  },
+  "overrides": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-native": "0.72.7"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "mendix": {
+    "minimumMXVersion": "9.24.0",
+    "framework": "React",
+    "category": "Display"
+  }
+}

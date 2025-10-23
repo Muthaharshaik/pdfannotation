@@ -1,0 +1,2770 @@
+/* PDF Annotations Widget CSS - Enhanced with Rich Text, File Upload, Searchable Dropdown, Excel/CSV Support, and Studio Pro Customization */
+
+.pdf-annotator-container {
+    /* CSS Variables for easy theming from Studio Pro */
+    --pdf-primary-color: #007bff;
+    --pdf-success-color: #28a745;
+    --pdf-danger-color: #dc3545;
+    --pdf-warning-color: #ffc107;
+    --pdf-info-color: #17a2b8;
+    --pdf-light-color: #f8f9fa;
+    --pdf-dark-color: #343a40;
+    --pdf-border-color: #dee2e6;
+    --pdf-border-radius: 8px;
+    --pdf-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    --pdf-toolbar-bg: #d4edda;
+    --pdf-toolbar-border: #c3e6cb;
+    --pdf-annotation-color: #3b82f6;
+    --pdf-excel-color: #1f7a1f; /* NEW: Excel/CSV specific color */
+    --pdf-excel-bg: #e8f5e8; /* NEW: Excel/CSV background */
+    
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    font-family: var(--pdf-font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    position: relative;
+}
+
+/* Allow Studio Pro classes to override widget styles */
+.pdf-annotator-container[class*="mx-"] {
+    /* This selector has higher specificity when Studio Pro classes are present */
+}
+
+/* Loading States */
+.pdf-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--pdf-light-color) 0%, #e9ecef 100%);
+    border-radius: var(--pdf-border-radius);
+    border: 1px solid var(--pdf-border-color);
+    text-align: center;
+}
+
+.pdf-loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* UPDATED: Blue spinner instead of green */
+.pdf-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e9ecef;
+    border-top: 4px solid #007bff; /* Changed from var(--pdf-success-color) to blue */
+    border-radius: 50%;
+    animation: pdf-spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+.pdf-loading-status-info {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* UPDATED: Blue text instead of green */
+.pdf-loading-status-text {
+    font-size: 18px;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #007bff; /* Changed from var(--pdf-success-color) to blue */
+}
+
+/* NEW: Excel/CSV specific loading states */
+.pdf-loading-state.excel-conversion {
+    background: linear-gradient(135deg, var(--pdf-excel-bg) 0%, #d4edda 100%);
+    border-color: var(--pdf-excel-color);
+}
+
+.pdf-loading-state.excel-conversion .pdf-loading-spinner {
+    border-top-color: var(--pdf-excel-color);
+}
+
+.pdf-loading-state.excel-conversion .pdf-loading-status-text {
+    color: var(--pdf-excel-color);
+}
+
+.pdf-excel-conversion-info {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(31, 122, 31, 0.1);
+    border-radius: 6px;
+    border: 1px solid var(--pdf-excel-color);
+    color: var(--pdf-excel-color);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.pdf-excel-conversion-steps {
+    margin-top: 0.5rem;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* NEW: Enhanced progress bar for Excel conversion */
+.pdf-excel-progress-container {
+    width: 100%;
+    max-width: 350px;
+    margin: 1rem 0;
+}
+
+.pdf-excel-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.pdf-excel-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--pdf-excel-color) 0%, #28a745 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.pdf-excel-progress-text {
+    margin-top: 0.5rem;
+    font-size: 12px;
+    color: var(--pdf-excel-color);
+    font-weight: 500;
+    text-align: center;
+}
+
+.pdf-excel-progress-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    animation: pdf-excel-shimmer 2s infinite;
+}
+
+@keyframes pdf-excel-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Toolbar Styling - Now themeable */
+.pdf-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--pdf-toolbar-bg);
+    border-bottom: 1px solid var(--pdf-toolbar-border);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.pdf-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.pdf-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* NEW: Excel file type indicator in toolbar */
+.pdf-file-type-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--pdf-excel-bg);
+    border: 1px solid var(--pdf-excel-color);
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--pdf-excel-color);
+}
+
+.pdf-file-type-indicator.excel {
+    background: #e8f5e8;
+    border-color: #1f7a1f;
+    color: #1f7a1f;
+}
+
+.pdf-file-type-indicator.csv {
+    background: #fff3cd;
+    border-color: #856404;
+    color: #856404;
+}
+
+.pdf-file-type-indicator.pdf {
+    background: #e3f2fd;
+    border-color: #1976d2;
+    color: #1976d2;
+}
+
+.pdf-file-type-icon {
+    font-size: 14px;
+}
+
+/* NEW: Multi-page indicator for Excel conversions */
+.pdf-multipage-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid var(--pdf-annotation-color);
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--pdf-annotation-color);
+}
+
+.pdf-rows-info {
+    font-size: 10px;
+    color: #666;
+    margin-left: 0.5rem;
+}
+
+/* Button Styling - Now themeable */
+.pdf-button {
+    background: var(--pdf-primary-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: calc(var(--pdf-border-radius) / 2);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.pdf-button:hover {
+    background: color-mix(in srgb, var(--pdf-primary-color) 80%, black 20%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-button-success {
+    background: var(--pdf-success-color);
+}
+
+.pdf-button-success:hover {
+    background: color-mix(in srgb, var(--pdf-success-color) 80%, black 20%);
+}
+
+.pdf-button-danger {
+    background: var(--pdf-danger-color);
+}
+
+.pdf-button-danger:hover {
+    background: color-mix(in srgb, var(--pdf-danger-color) 80%, black 20%);
+}
+
+.pdf-button-warning {
+    background: var(--pdf-warning-color);
+    color: #212529;
+}
+
+.pdf-button-warning:hover {
+    background: color-mix(in srgb, var(--pdf-warning-color) 80%, black 20%);
+}
+
+/* PDF Viewer Container - Now themeable */
+.pdf-viewer-container {
+    width: 100%;
+    height: 700px;
+    display: flex;
+    border: 1px solid var(--pdf-border-color);
+    border-radius: var(--pdf-border-radius);
+    overflow: hidden;
+    background: #ffffff;
+    flex-direction: column;
+}
+
+/* NEW: Excel table-style enhancement for converted PDFs */
+.pdf-viewer-container.excel-converted {
+    border-color: var(--pdf-excel-color);
+    background: var(--pdf-excel-bg);
+}
+
+.pdf-viewer-container.excel-converted .react-pdf__Page {
+    box-shadow: 0 4px 12px rgba(31, 122, 31, 0.15);
+    border: 1px solid rgba(31, 122, 31, 0.2);
+}
+
+/* Enhanced page navigation for multi-page Excel */
+.pdf-page-navigation.excel-multipage {
+    background: var(--pdf-excel-bg);
+    border: 1px solid var(--pdf-excel-color);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+}
+
+.pdf-page-navigation.excel-multipage .pdf-page-info {
+    color: var(--pdf-excel-color);
+    font-weight: 600;
+}
+
+/* UPDATED: Instruction overlay positioned at bottom left with smaller content */
+.pdf-instruction-overlay {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.pdf-instruction-overlay div {
+    background: rgba(0, 123, 255, 0.9);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    max-width: 200px;
+    text-align: center;
+    animation: fadeInOut 3s ease-in-out infinite;
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* Make sure the instruction doesn't interfere with document interaction */
+.pdf-instruction-overlay * {
+    pointer-events: none;
+}
+
+/* Responsive adjustments for instruction overlay */
+@media (max-width: 768px) {
+    .pdf-instruction-overlay {
+        bottom: 10px;
+        left: 10px;
+    }
+    
+    .pdf-instruction-overlay div {
+        font-size: 10px;
+        padding: 4px 8px;
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pdf-instruction-overlay {
+        bottom: 8px;
+        left: 8px;
+    }
+    
+    .pdf-instruction-overlay div {
+        font-size: 9px;
+        padding: 3px 6px;
+        max-width: 120px;
+    }
+}
+
+/* Annotation Areas - Now themeable */
+.pdf-annotation-area {
+    position: absolute;
+    background: color-mix(in srgb, var(--pdf-annotation-color) 20%, transparent 80%);
+    border: 3px solid var(--pdf-annotation-color);
+    border-radius: calc(var(--pdf-border-radius) / 2);
+    cursor: pointer;
+    z-index: 10;
+    pointer-events: auto;
+    transition: all 0.2s ease;
+}
+
+.pdf-annotation-area:hover {
+    background: color-mix(in srgb, var(--pdf-annotation-color) 40%, transparent 60%);
+    transform: scale(1.02);
+}
+
+/* Annotation Markers - Now themeable */
+.pdf-annotation-marker {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    z-index: 20;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    transform: translate(-50%, -50%);
+}
+
+/* Annotations Sidebar - Now themeable */
+.pdf-annotations-sidebar {
+    width: 350px;
+    background: var(--pdf-light-color);
+    border-left: 1px solid var(--pdf-border-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.pdf-sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--pdf-border-color);
+    background: #ffffff;
+}
+
+/* NEW: Excel conversion status in sidebar */
+.pdf-excel-status-info {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--pdf-excel-bg);
+    border: 1px solid var(--pdf-excel-color);
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.pdf-excel-status-title {
+    font-weight: 600;
+    color: var(--pdf-excel-color);
+    margin-bottom: 0.25rem;
+}
+
+.pdf-excel-status-details {
+    color: #666;
+    line-height: 1.3;
+}
+
+.pdf-excel-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    font-size: 11px;
+    color: var(--pdf-excel-color);
+}
+
+/* Modal Styling - Now themeable */
+.pdf-comment-modal {
+    background: white;
+    border-radius: var(--pdf-border-radius);
+    padding: 0;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.pdf-modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--pdf-border-color);
+    background: linear-gradient(135deg, var(--pdf-annotation-color) 0%, #1d4ed8 100%);
+    color: white;
+    border-radius: var(--pdf-border-radius) var(--pdf-border-radius) 0 0;
+}
+
+/* Form Elements - Now themeable */
+.pdf-form-textarea,
+.pdf-form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--pdf-border-color);
+    border-radius: calc(var(--pdf-border-radius) / 2);
+    font-size: 14px;
+    box-sizing: border-box;
+    color: #333;
+    background: #fff;
+    transition: border-color 0.2s ease;
+}
+
+.pdf-form-textarea:focus,
+.pdf-form-input:focus {
+    border-color: var(--pdf-annotation-color);
+    outline: none;
+}
+
+/* FIXED: Rich Text Editor Styles with improved visibility */
+.pdf-richtext-toolbar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border: 1px solid var(--pdf-border-color);
+    border-radius: 6px;
+}
+
+.pdf-richtext-btn {
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    transition: all 0.2s ease;
+}
+
+.pdf-richtext-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.pdf-richtext-btn:active {
+    background-color: #e5e7eb;
+}
+
+.pdf-richtext-editor {
+    min-height: 120px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 16px;
+    border: 2px solid var(--pdf-border-color);
+    border-radius: calc(var(--pdf-border-radius) / 2);
+    background-color: white;
+    font-size: 15px;
+    line-height: 1.5;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+    width: 100%;
+    color: #1f2937 !important; /* FIXED: Strong text color for visibility */
+}
+
+.pdf-richtext-editor:focus {
+    border-color: var(--pdf-annotation-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.pdf-richtext-editor:empty::before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    font-style: italic;
+    pointer-events: none;
+}
+
+.pdf-richtext-editor p {
+    margin: 0 0 8px 0;
+    color: #1f2937 !important; /* FIXED: Ensure paragraph text is visible */
+}
+
+.pdf-richtext-editor p:last-child {
+    margin-bottom: 0;
+}
+
+.pdf-richtext-editor strong {
+    font-weight: 600;
+    color: #1f2937 !important; /* FIXED: Bold text visibility */
+}
+
+.pdf-richtext-editor em {
+    font-style: italic;
+    color: #1f2937 !important; /* FIXED: Italic text visibility */
+}
+
+.pdf-richtext-editor ul {
+    margin: 8px 0;
+    padding-left: 20px;
+    color: #1f2937 !important; /* FIXED: List text visibility */
+}
+
+.pdf-richtext-editor li {
+    color: #1f2937 !important; /* FIXED: List item text visibility */
+}
+
+.pdf-richtext-editor a {
+    color: var(--pdf-annotation-color);
+    text-decoration: underline;
+}
+
+/* FIXED: Additional text color fixes for rich text content */
+.pdf-richtext-editor * {
+    color: #1f2937 !important;
+}
+
+.pdf-richtext-editor div {
+    color: #1f2937 !important;
+}
+
+.pdf-richtext-editor span {
+    color: #1f2937 !important;
+}
+
+/* NEW: File Upload Styles */
+.pdf-file-upload-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.pdf-file-input {
+    display: none;
+}
+
+.pdf-file-upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 2px dashed #d1d5db;
+    border-radius: calc(var(--pdf-border-radius) / 2);
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.pdf-file-upload-btn:hover {
+    border-color: var(--pdf-annotation-color);
+    background-color: #f0f9ff;
+    color: var(--pdf-annotation-color);
+}
+
+.pdf-uploaded-files {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pdf-uploaded-file {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background-color: #f3f4f6;
+    border-radius: 6px;
+    border: 1px solid var(--pdf-border-color);
+}
+
+.pdf-file-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.pdf-file-size {
+    font-size: 12px;
+    color: #6b7280;
+    margin-left: 8px;
+}
+
+.pdf-file-remove-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 4px;
+    background-color: #ef4444;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-file-remove-btn:hover {
+    background-color: #dc2626;
+    transform: scale(1.05);
+}
+
+/* NEW: File Preview Modal Styles */
+.pdf-file-preview-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20000;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.pdf-file-preview-modal {
+    background-color: white;
+    border-radius: var(--pdf-border-radius);
+    width: 100%;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: pdf-filePreviewSlideIn 0.3s ease-out;
+}
+
+@keyframes pdf-filePreviewSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.pdf-file-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--pdf-border-color);
+    background-color: #f9fafb;
+}
+
+.pdf-file-preview-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    word-break: break-word;
+    max-width: calc(100% - 50px);
+}
+
+.pdf-file-preview-close {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.pdf-file-preview-close:hover {
+    background-color: #dc2626;
+    transform: scale(1.05);
+}
+
+.pdf-file-preview-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow: auto;
+    min-height: 400px;
+    background-color: #f8f9fa;
+}
+
+.pdf-file-preview-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    color: #6b7280;
+}
+
+.pdf-file-preview-loading .pdf-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e7eb;
+    border-top: 3px solid var(--pdf-annotation-color);
+    border-radius: 50%;
+    animation: pdf-spin 1s linear infinite;
+}
+
+.pdf-file-preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: calc(var(--pdf-border-radius) / 2);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-file-preview-pdf {
+    width: 100%;
+    height: 70vh;
+    border: none;
+    border-radius: calc(var(--pdf-border-radius) / 2);
+    background-color: white;
+}
+
+.pdf-file-preview-download {
+    text-align: center;
+    padding: 40px;
+    background-color: white;
+    border-radius: calc(var(--pdf-border-radius) / 2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-file-preview-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    color: #6b7280;
+}
+
+.pdf-file-preview-download p {
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.pdf-file-preview-download-btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: var(--pdf-annotation-color);
+    color: white;
+    text-decoration: none;
+    border-radius: calc(var(--pdf-border-radius) / 2);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.pdf-file-preview-download-btn:hover {
+    background-color: color-mix(in srgb, var(--pdf-annotation-color) 80%, black 20%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* NEW: Searchable Reference Documents Dropdown Styles */
+.pdf-searchable-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.pdf-searchable-dropdown .pdf-form-input {
+    padding-right: 50px; /* Make room for both search icon and dropdown arrow */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z'/%3e%3c/svg%3e");
+    background-position: right 35px center;
+    background-repeat: no-repeat;
+    background-size: 16px 16px;
+}
+
+.pdf-dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid var(--pdf-border-color);
+    border-top: none;
+    border-radius: 0 0 calc(var(--pdf-border-radius) / 2) calc(var(--pdf-border-radius) / 2);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    animation: pdf-dropdownSlideDown 0.2s ease-out;
+}
+
+@keyframes pdf-dropdownSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pdf-dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+    color: #333;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pdf-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.pdf-dropdown-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+.pdf-dropdown-item.selected {
+    background-color: #e7f3ff;
+    color: var(--pdf-annotation-color);
+    font-weight: 500;
+}
+
+.pdf-dropdown-item.clear-option {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid var(--pdf-border-color);
+    font-style: italic;
+    color: #6b7280;
+}
+
+.pdf-dropdown-item.clear-option:hover {
+    background-color: #e9ecef !important;
+}
+
+.pdf-dropdown-item.no-results {
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+    cursor: default;
+}
+
+.pdf-dropdown-item.no-results:hover {
+    background-color: white !important;
+}
+
+/* Icon styling within dropdown items */
+.pdf-dropdown-item .doc-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.pdf-dropdown-item .doc-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pdf-dropdown-item .selected-icon {
+    color: var(--pdf-annotation-color);
+    font-size: 16px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+/* Dropdown arrow styling */
+.pdf-searchable-dropdown .dropdown-arrow {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6b7280;
+    font-size: 12px;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.pdf-searchable-dropdown .dropdown-arrow:hover {
+    color: var(--pdf-annotation-color);
+}
+
+.pdf-searchable-dropdown input[type="text"]:focus {
+    border-color: var(--pdf-annotation-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Custom scrollbar for dropdown */
+.pdf-dropdown-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.pdf-dropdown-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.pdf-dropdown-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.pdf-dropdown-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Loading state for dropdown (if needed) */
+.pdf-dropdown-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.pdf-dropdown-loading::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid #e5e7eb;
+    border-top: 2px solid var(--pdf-annotation-color);
+    border-radius: 50%;
+    animation: pdf-spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+/* NEW: Enhanced annotation display with rich text and file support */
+.pdf-annotation-rich-content {
+    margin: 8px 0;
+}
+
+.pdf-annotation-rich-content p {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #111827 !important; /* ENHANCED: Darker color for better visibility */
+    font-weight: 500 !important; /* ENHANCED: Slightly bolder for better readability */
+}
+
+.pdf-annotation-rich-content strong {
+    font-weight: 700 !important; /* ENHANCED: Stronger bold text */
+    color: #000000 !important; /* ENHANCED: Pure black for bold text */
+}
+
+.pdf-annotation-rich-content em {
+    font-style: italic;
+    color: #111827 !important; /* ENHANCED: Darker italic text */
+}
+
+.pdf-annotation-rich-content ul {
+    margin: 4px 0;
+    padding-left: 16px;
+    color: #111827 !important; /* ENHANCED: Darker list text */
+}
+
+.pdf-annotation-rich-content li {
+    color: #111827 !important; /* ENHANCED: Darker list item text */
+}
+
+.pdf-annotation-rich-content a {
+    color: var(--pdf-annotation-color);
+    text-decoration: underline;
+}
+
+.pdf-annotation-files {
+    margin-top: 8px;
+}
+
+.pdf-annotation-files-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+
+.pdf-annotation-file-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background-color: #f9fafb;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #4b5563;
+    transition: all 0.2s ease;
+    margin-bottom: 4px;
+}
+
+/* NEW: Clickable file styles for preview functionality */
+.pdf-clickable-file {
+    cursor: pointer !important;
+    color: var(--pdf-annotation-color) !important;
+    text-decoration: underline !important;
+    background-color: #f9fafb !important;
+    border: 1px solid var(--pdf-border-color) !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    transition: all 0.2s ease !important;
+}
+
+.pdf-clickable-file:hover {
+    background-color: #eff6ff !important;
+    border-color: var(--pdf-annotation-color) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* NEW: Reference document display */
+.pdf-annotation-reference-doc {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background-color: #f0f9ff;
+    border-radius: 6px;
+    border: 1px solid #0ea5e9;
+}
+
+.pdf-reference-content {
+    font-size: 12px;
+    color: #0369a1;
+}
+
+.pdf-reference-link {
+    color: #0ea5e9 !important;
+    text-decoration: underline !important;
+    transition: all 0.2s ease;
+}
+
+.pdf-reference-link:hover {
+    color: #0284c7 !important;
+}
+
+/* NEW: User ownership styling for annotations */
+.pdf-annotation-user {
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.pdf-annotation-user[style*="color: #10B981"] {
+    /* User's own annotation styling */
+    background-color: rgba(16, 185, 129, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Keep all remaining styles unchanged from the original file */
+.pdf-progress-container {
+    width: 350px;
+    background: #e9ecef;
+    border-radius: 12px;
+    margin: 1rem auto;
+    padding: 4px;
+}
+
+.pdf-progress-bar-bg {
+    width: 100%;
+    background: #e9ecef;
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.pdf-progress-bar {
+    height: 12px;
+    background: linear-gradient(90deg, #28a745 0%, #20c997 50%, #17a2b8 100%);
+    border-radius: 8px;
+    transition: width 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+}
+
+.pdf-progress-text {
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.pdf-secure-note {
+    color: #6c757d;
+    display: block;
+    font-size: 14px;
+}
+
+.pdf-user-info {
+    color: #007bff;
+    display: block;
+    font-size: 12px;
+    margin-top: 0.5rem;
+}
+
+/* Debug Information Styling */
+.pdf-debug-details {
+    margin-top: 1.5rem;
+    text-align: left;
+}
+
+.pdf-debug-summary {
+    cursor: pointer;
+    color: #007bff;
+    font-weight: 600;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.pdf-debug-content {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    font-size: 11px;
+    font-family: Monaco, Consolas, monospace;
+    max-height: 200px;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.debug-log-container {
+    margin-top: 1rem;
+}
+
+.debug-log {
+    margin-bottom: 2px;
+    color: #333;
+}
+
+.debug-log.success {
+    color: #28a745;
+}
+
+.debug-log.error {
+    color: #dc3545;
+}
+
+.debug-log.warning {
+    color: #ffc107;
+}
+
+.debug-log.info {
+    color: #007bff;
+}
+
+/* Presigned URL Debug Styling */
+.presigned-url-debug {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+}
+
+.url-debug-title {
+    margin: 0 0 0.5rem 0;
+    color: #495057;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.url-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.url-info-item {
+    font-size: 11px;
+    color: #495057;
+    background: #ffffff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    border: 1px solid #e5e7eb;
+}
+
+.url-debug-textarea {
+    width: 100%;
+    max-width: 100%;
+    min-height: 80px;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 11px;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #495057;
+    resize: vertical;
+    word-break: break-all;
+}
+
+.url-debug-note {
+    display: block;
+    margin-top: 0.5rem;
+    color: #6c757d;
+    font-style: italic;
+    font-size: 11px;
+}
+
+/* Error States */
+.pdf-error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
+    text-align: center;
+}
+
+/* NEW: Excel conversion error states */
+.pdf-error-state.excel-error {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-color: #856404;
+}
+
+.pdf-error-state.excel-error .pdf-error-icon {
+    color: #856404;
+}
+
+.pdf-error-state.excel-error .pdf-error-title {
+    color: #856404;
+}
+
+.pdf-error-state.excel-error .pdf-error-message {
+    color: #856404;
+}
+
+.pdf-error-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.pdf-error-icon {
+    font-size: 48px;
+    margin-bottom: 1rem;
+    animation: pdf-pulse 2s ease-in-out infinite;
+}
+
+.pdf-error-title {
+    margin: 0 0 1rem 0;
+    font-size: 24px;
+    color: #721c24;
+}
+
+.pdf-error-message {
+    font-size: 16px;
+    margin-bottom: 1rem;
+    color: #721c24;
+}
+
+.pdf-troubleshooting-section {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    text-align: left;
+}
+
+.pdf-troubleshooting-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 14px;
+    color: #856404;
+}
+
+.pdf-troubleshooting-list {
+    margin: 0;
+    padding-left: 1.5rem;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.pdf-troubleshooting-item {
+    margin-bottom: 0.25rem;
+}
+
+.pdf-cors-helper {
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    text-align: left;
+}
+
+.pdf-cors-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 14px;
+    color: #004085;
+}
+
+.pdf-cors-config {
+    background: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 11px;
+    overflow: auto;
+    margin: 0;
+    font-family: Monaco, Consolas, monospace;
+}
+
+.pdf-viewer-empty {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-empty-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.pdf-empty-icon {
+    font-size: 48px;
+    margin-bottom: 1rem;
+}
+
+.pdf-empty-title {
+    margin: 0 0 1rem 0;
+    font-size: 24px;
+    color: #495057;
+}
+
+.pdf-empty-message {
+    font-size: 16px;
+    color: #6c757d;
+    margin: 0 0 1rem 0;
+}
+
+.pdf-empty-user {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.pdf-empty-editability {
+    font-size: 14px;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+
+.pdf-user-info {
+    font-size: 14px;
+    color: #155724;
+    font-weight: 600;
+    background: #ffffff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    border: 1px solid #c3e6cb;
+}
+
+.pdf-editability-status {
+    font-size: 12px;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.pdf-editability-status.enabled {
+    background: #d4edda;
+    color: #155724;
+}
+
+.pdf-editability-status.disabled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Navigation and Controls */
+.pdf-page-navigation {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.pdf-page-info {
+    font-size: 12px;
+    color: #155724;
+    min-width: 80px;
+    text-align: center;
+}
+
+.pdf-zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.pdf-zoom-info {
+    font-size: 12px;
+    color: #155724;
+    min-width: 50px;
+    text-align: center;
+}
+
+.pdf-selection-type {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    font-size: 12px;
+    background: white;
+    color: #155724;
+}
+
+.pdf-button:active {
+    transform: translateY(0);
+}
+
+.pdf-button:disabled,
+.pdf-button.disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.pdf-button.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.pdf-button-cancel {
+    background: #6c757d;
+    color: white;
+}
+
+.pdf-button-cancel:hover {
+    background: #5a6268;
+}
+
+.pdf-button-save {
+    background: #E5E7EB;
+    color: #374151;
+}
+
+.pdf-button-save:hover {
+    background: #D1D5DB;
+}
+
+/* Main Content Layout */
+.pdf-main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.pdf-viewer-area {
+    flex: 1;
+    position: relative;
+    background: #f5f5f5;
+    overflow: auto !important; /* Ensure scrolling is enabled */
+    width: 100%;
+    height: 100%;
+}
+
+.pdf-viewer-area.with-sidebar {
+    flex: 1;
+}
+
+.pdf-viewer-area.full-width {
+    flex: 1;
+}
+
+/* Loading Overlays */
+.pdf-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248, 249, 250, 0.95);
+    z-index: 10;
+}
+
+.pdf-loading-text {
+    text-align: center;
+    margin-left: 1rem;
+}
+
+.pdf-loading-message {
+    font-size: 16px;
+    color: #28a745;
+    margin-bottom: 0.5rem;
+}
+
+.pdf-loading-details {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* Document Container */
+.pdf-document-container {
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+    overflow: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    padding: 5px !important;
+    box-sizing: border-box !important;
+}
+
+.pdf-page-wrapper {
+    position: relative;
+    display: inline-block;
+    margin: 0 !important; /* Remove any margin that could interfere */
+    box-sizing: border-box !important;
+}
+
+.pdf-document-loading {
+    text-align: center;
+    padding: 2rem;
+}
+
+.pdf-document-loading-text {
+    color: #28a745;
+    font-size: 18px;
+    margin-bottom: 1rem;
+}
+
+.pdf-document-loading-details {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.pdf-page-loading {
+    width: 600px;
+    height: 800px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-page-loading-text {
+    font-size: 18px;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+/* Selection Overlay */
+.pdf-selection-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    cursor: default;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.pdf-selection-overlay.active {
+    pointer-events: auto;
+    cursor: crosshair;
+    background: rgba(255, 107, 107, 0.02);
+    border: 1px dashed rgba(255, 107, 107, 0.3);
+    z-index: 1000;
+}
+
+.pdf-selection-rect {
+    position: absolute;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 1001;
+}
+
+.pdf-selection-rect.current {
+    background: rgba(255, 107, 107, 0.3);
+    border: 2px dashed #ff6b6b;
+}
+
+/* Mode Indicators */
+.pdf-mode-indicator {
+    position: absolute;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 20;
+}
+
+.pdf-mode-indicator.annotation-mode {
+    top: 12px;
+    left: 12px;
+    background-color: rgba(40, 167, 69, 0.9);
+}
+
+.pdf-mode-indicator.area-mode {
+    top: 12px;
+    left: 12px;
+    background-color: rgba(255, 193, 7, 0.9);
+    color: #000;
+}
+
+/* Text Annotations */
+.pdf-text-annotations {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.pdf-annotation-marker:hover {
+    transform: translate(-50%, -50%) scale(1.3);
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.6);
+    z-index: 30;
+}
+
+/* Preparing States */
+.pdf-preparing-container {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.pdf-preparing-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.pdf-preparing-icon {
+    font-size: 48px;
+    margin-bottom: 1rem;
+}
+
+.pdf-preparing-text {
+    font-size: 18px;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.pdf-preparing-details {
+    font-size: 14px;
+    color: #adb5bd;
+}
+
+.pdf-sidebar-title-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pdf-sidebar-title {
+    margin: 0;
+    font-size: 16px;
+    color: #495057;
+}
+
+.pdf-sidebar-page-info {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.pdf-sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+/* No Annotations State */
+.pdf-no-annotations {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #6c757d;
+}
+
+.pdf-no-annotations-icon {
+    font-size: 48px;
+    margin-bottom: 1rem;
+}
+
+.pdf-no-annotations-text {
+    margin: 0 0 1rem 0;
+    font-size: 16px;
+}
+
+.pdf-no-annotations-hint {
+    font-size: 14px;
+    margin: 0 0 1rem 0;
+}
+
+.pdf-no-annotations-user {
+    font-size: 12px;
+    color: #007bff;
+    margin-top: 1rem;
+    font-weight: 600;
+}
+
+/* Annotation Items */
+.pdf-annotation-item {
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.pdf-annotation-item.current-page {
+    background: #ffffff;
+    border: 2px solid #3b82f6;
+    opacity: 1;
+}
+
+.pdf-annotation-item.other-page {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    opacity: 0.7;
+}
+
+.pdf-annotation-item:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.pdf-annotation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.pdf-annotation-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pdf-annotation-number {
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.pdf-current-badge {
+    font-size: 10px;
+    background: #3b82f6;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 0.5rem;
+}
+
+.pdf-annotation-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.pdf-action-button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: white;
+}
+
+.pdf-action-button.edit {
+    background-color: #f59e0b;
+}
+
+.pdf-action-button.delete {
+    background-color: #6b7280;
+}
+
+.pdf-annotation-content {
+    margin-bottom: 0.5rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #3b82f6;
+}
+
+/* ENHANCED: Main annotation text styling for maximum visibility */
+.pdf-annotation-text {
+    margin: 0;
+    font-size: 16px;
+    color: #000000 !important; /* ENHANCED: Pure black for maximum contrast */
+    line-height: 1.5;
+    font-weight: 600 !important; /* ENHANCED: Bolder font weight for better readability */
+    text-shadow: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.pdf-selected-text {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid #dee2e6;
+}
+
+.pdf-selected-text-content {
+    margin-top: 0.25rem;
+    font-style: normal;
+    color: #333;
+}
+
+.pdf-annotation-hyperlink {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    background: #e3f2fd;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.pdf-hyperlink {
+    color: #1976d2;
+    text-decoration: underline;
+    margin-left: 0.5rem;
+    word-break: break-all;
+}
+
+.pdf-annotation-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #6c757d;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.pdf-annotation-user {
+    font-weight: 500;
+}
+
+.pdf-annotation-date {
+    font-weight: normal;
+}
+
+/* Modal Styling */
+.pdf-comment-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.pdf-modal-title {
+    margin: 0;
+    font-size: 18px;
+}
+
+.pdf-modal-body {
+    padding: 1.5rem;
+}
+
+.pdf-selected-text-display {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pdf-selected-text-label {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.pdf-selected-text-value {
+    color: #333;
+    font-style: normal;
+    line-height: 1.5;
+}
+
+.pdf-form-group {
+    margin-bottom: 1rem;
+}
+
+.pdf-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.pdf-form-textarea {
+    resize: vertical;
+}
+
+.pdf-user-display {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+    background: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.pdf-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    border-radius: 0 0 12px 12px;
+}
+
+/* React-PDF Core Styles */
+.react-pdf__Document {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: transparent;
+}
+
+.react-pdf__Page {
+    max-width: none !important; /* Remove width constraints that could interfere */
+    width: auto !important;
+    height: auto !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    background: white;
+    position: relative;
+    display: block !important;
+}
+
+/* NEW: Enhanced styling for Excel-converted PDFs */
+.react-pdf__Page.excel-converted {
+    border: 2px solid var(--pdf-excel-color);
+    box-shadow: 0 6px 16px rgba(31, 122, 31, 0.2);
+}
+
+.react-pdf__Page.excel-converted::before {
+    content: '📊';
+    position: absolute;
+    top: -15px;
+    right: 10px;
+    background: var(--pdf-excel-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    z-index: 5;
+}
+
+/* PDF canvas styling */
+.react-pdf__Page canvas {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Text layer styling */
+.react-pdf__Page__textContent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+    user-select: text;
+}
+
+/* Text spans styling */
+.react-pdf__Page__textContent span {
+    color: transparent;
+    position: absolute;
+    white-space: nowrap;
+    cursor: text;
+    transform-origin: 0% 0%;
+}
+
+.react-pdf__Page__annotations {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.react-pdf__Page__annotations > * {
+    pointer-events: auto;
+}
+
+/* Essential Text Layer Styles */
+.react-pdf__Page__textContent .textLayer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 0.2;
+    line-height: 1;
+    text-align: initial;
+}
+
+.react-pdf__Page__textContent .textLayer > span {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+}
+
+.react-pdf__Page__textContent .textLayer .highlight {
+    margin: -1px;
+    padding: 1px;
+    background-color: rgba(180, 0, 170, 0.2);
+    border-radius: 4px;
+}
+
+.react-pdf__Page__textContent .textLayer .highlight.begin {
+    border-radius: 4px 0px 0px 4px;
+}
+
+.react-pdf__Page__textContent .textLayer .highlight.end {
+    border-radius: 0px 4px 4px 0px;
+}
+
+.react-pdf__Page__textContent .textLayer .highlight.middle {
+    border-radius: 0px;
+}
+
+.react-pdf__Page__textContent .textLayer .highlight.selected {
+    background-color: rgba(0, 100, 0, 0.2);
+}
+
+/* Text Selection Highlighting */
+.react-pdf__Page__textContent ::selection {
+    background: rgba(255, 193, 7, 0.6) !important;
+    color: transparent !important;
+}
+
+.react-pdf__Page__textContent ::-moz-selection {
+    background: rgba(255, 193, 7, 0.6) !important;
+    color: transparent !important;
+}
+
+.react-pdf__Page__textContent ::-webkit-selection {
+    background: rgba(255, 193, 7, 0.6) !important;
+    color: transparent !important;
+}
+
+/* Custom Animations */
+@keyframes pdf-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pdf-pulse {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(1.05);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* UPDATED: fadeInOut animation for instruction message */
+@keyframes fadeInOut {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+/* UPDATED: Studio Pro Customization Support with correct class name */
+
+/* Custom classes for Mendix Studio Pro customization */
+
+/* 
+  IMPORTANT: Any class you add in Mendix Studio Pro will be applied to the .pdf-annotator-container element
+  
+  How to use:
+  1. Add any class name in Mendix Studio Pro (e.g., "Test-pdf", "my-custom-style", etc.)
+  2. Write CSS targeting that class combined with .pdf-annotator-container
+  
+  Examples:
+  
+  For class "Test-pdf":
+  .pdf-annotator-container.Test-pdf {
+    border: 3px solid red;
+    background-color: #ffe6e6;
+  }
+  
+  .pdf-annotator-container.Test-pdf .pdf-toolbar {
+    background-color: red;
+  }
+  
+  .pdf-annotator-container.Test-pdf .pdf-annotation-marker {
+    background-color: red;
+  }
+  
+  .pdf-annotator-container.Test-pdf .pdf-button {
+    background-color: red;
+  }
+  
+  For class "dark-theme":
+  .pdf-annotator-container.dark-theme {
+    background-color: #1a1a1a;
+    color: white;
+  }
+  
+  Add your custom CSS rules in your Mendix theme CSS file.
+*/
+
+/* Widget theme variants - Add these classes in Mendix Studio Pro to customize appearance */
+.pdf-annotator-container.theme-dark {
+    --pdf-primary-color: #60a5fa;
+    --pdf-success-color: #10b981;
+    --pdf-danger-color: #f87171;
+    --pdf-warning-color: #fbbf24;
+    --pdf-info-color: #38bdf8;
+    --pdf-light-color: #1f2937;
+    --pdf-dark-color: #f9fafb;
+    --pdf-border-color: #374151;
+    --pdf-toolbar-bg: #374151;
+    --pdf-toolbar-border: #4b5563;
+    --pdf-annotation-color: #60a5fa;
+    --pdf-excel-color: #34d399;
+    --pdf-excel-bg: #064e3b;
+    background-color: #111827;
+    color: #f9fafb;
+}
+
+.pdf-annotator-container.theme-dark .pdf-annotations-sidebar,
+.pdf-annotator-container.theme-dark .pdf-comment-modal,
+.pdf-annotator-container.theme-dark .pdf-file-preview-modal {
+    background-color: #1f2937;
+    color: #f9fafb;
+}
+
+.pdf-annotator-container.theme-dark .pdf-modal-footer {
+    background-color: #374151;
+}
+
+.pdf-annotator-container.theme-minimal .pdf-toolbar {
+    display: none;
+}
+
+.pdf-annotator-container.theme-compact .pdf-annotations-sidebar {
+    width: 300px;
+}
+
+.pdf-annotator-container.theme-compact .pdf-annotation-item {
+    padding: 12px;
+    margin-bottom: 8px;
+}
+
+/* Size variants */
+.pdf-annotator-container.size-small {
+    height: 400px;
+}
+
+.pdf-annotator-container.size-medium {
+    height: 600px;
+}
+
+.pdf-annotator-container.size-large {
+    height: 800px;
+}
+
+.pdf-annotator-container.size-full {
+    height: 100vh;
+}
+
+/* Color scheme variants */
+.pdf-annotator-container.scheme-blue {
+    --pdf-primary-color: #3b82f6;
+    --pdf-annotation-color: #3b82f6;
+}
+
+.pdf-annotator-container.scheme-green {
+    --pdf-primary-color: #10b981;
+    --pdf-annotation-color: #10b981;
+}
+
+.pdf-annotator-container.scheme-purple {
+    --pdf-primary-color: #8b5cf6;
+    --pdf-annotation-color: #8b5cf6;
+}
+
+.pdf-annotator-container.scheme-red {
+    --pdf-primary-color: #ef4444;
+    --pdf-annotation-color: #ef4444;
+}
+
+.pdf-annotator-container.scheme-orange {
+    --pdf-primary-color: #f59e0b;
+    --pdf-annotation-color: #f59e0b;
+}
+
+/* NEW: Excel-specific theme variants */
+.pdf-annotator-container.excel-theme {
+    --pdf-primary-color: var(--pdf-excel-color);
+    --pdf-annotation-color: var(--pdf-excel-color);
+    --pdf-toolbar-bg: var(--pdf-excel-bg);
+    --pdf-toolbar-border: var(--pdf-excel-color);
+}
+
+.pdf-annotator-container.excel-theme .pdf-loading-spinner {
+    border-top-color: var(--pdf-excel-color);
+}
+
+.pdf-annotator-container.excel-theme .pdf-loading-status-text {
+    color: var(--pdf-excel-color);
+}
+
+/* Disable states for read-only mode */
+.pdf-annotator-container.read-only .pdf-button-success,
+.pdf-annotator-container.read-only .pdf-selection-type {
+    display: none;
+}
+
+.pdf-annotator-container.read-only .pdf-annotation-actions {
+    display: none;
+}
+
+.pdf-annotator-container.read-only .pdf-annotation-marker {
+    cursor: default;
+}
+
+/* Animation classes */
+.pdf-annotator-container.animate-fade-in {
+    animation: pdf-fadeIn 0.3s ease-in;
+}
+
+@keyframes pdf-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.pdf-annotator-container.animate-slide-up {
+    animation: pdf-slideUp 0.3s ease-out;
+}
+
+@keyframes pdf-slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* High contrast mode for accessibility */
+.pdf-annotator-container.high-contrast {
+    --pdf-primary-color: #000000;
+    --pdf-border-color: #000000;
+    --pdf-annotation-color: #000000;
+    --pdf-excel-color: #000000;
+}
+
+.pdf-annotator-container.high-contrast .pdf-annotation-marker {
+    border: 3px solid #000000;
+    background-color: #ffffff;
+}
+
+.pdf-annotator-container.high-contrast .pdf-annotation-area {
+    border: 3px solid #000000;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* UPDATED: Maximize/Minimize styles with correct class names */
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget.pdf-maximized {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 50000 !important;
+    background: #ffffff !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: none !important;
+    max-height: none !important;
+}
+
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget .pdf-main-content {
+    height: calc(100vh - 60px) !important;
+    overflow: hidden !important; /* Let child elements handle scrolling */
+}
+
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget .pdf-viewer-area {
+    background: #f8f9fa !important;
+    overflow: auto !important;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget .pdf-document-container {
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+    overflow: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    padding: 5px !important;
+    box-sizing: border-box !important;
+}
+
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget .react-pdf__Page {
+    max-width: none !important;
+    width: auto !important;
+    height: auto !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+    display: block !important;
+    position: relative !important;
+}
+
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget .pdf-annotation-area {
+    border-width: 2px !important;
+}
+
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget .pdf-text-highlight {
+    border-width: 1px !important;
+}
+
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget .pdf-annotation-marker {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 14px !important;
+}
+
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget .pdf-annotations-sidebar {
+    width: 400px !important;
+    max-height: none !important;
+}
+
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget .pdf-sidebar-content {
+    max-height: calc(100vh - 160px) !important;
+}
+
+/* UPDATED: Instruction overlay in maximized mode */
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget.pdf-maximized .pdf-instruction-overlay {
+    bottom: 25px !important;
+    left: 25px !important;
+}
+
+.maxmize_dpf_popup_ht_adj.custom_pdf_annotator_widget.pdf-maximized .pdf-instruction-overlay div {
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+    max-width: 250px !important;
+}
+
+/* Mobile responsiveness for dropdown */
+@media (max-width: 768px) {
+    .pdf-annotator-container {
+        font-size: 14px;
+    }
+    
+    .pdf-loading-state,
+    .pdf-error-state {
+        height: 300px;
+        padding: 1rem;
+    }
+    
+    .pdf-loading-spinner {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .pdf-button {
+        padding: 0.4rem 0.8rem;
+        font-size: 12px;
+    }
+    
+    .react-pdf__Page {
+        max-width: calc(100% - 1rem);
+        margin-bottom: 0.5rem;
+    }
+    
+    .pdf-annotation-marker {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+
+    .pdf-main-content {
+        flex-direction: column;
+    }
+
+    .pdf-viewer-area.with-sidebar {
+        flex: 1;
+    }
+
+    .pdf-annotations-sidebar {
+        width: 100%;
+        max-height: 200px;
+        border-left: none;
+        border-top: 1px solid var(--pdf-border-color);
+    }
+
+    .pdf-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .pdf-toolbar-left,
+    .pdf-toolbar-right {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .pdf-comment-modal,
+    .pdf-file-preview-modal {
+        margin: 10px;
+        max-width: calc(100% - 20px);
+    }
+
+    .pdf-modal-body {
+        padding: 1rem;
+    }
+
+    .pdf-file-preview-modal {
+        max-height: calc(100vh - 20px);
+    }
+
+    /* Mobile dropdown styles */
+    .pdf-dropdown-list {
+        max-height: 150px;
+        font-size: 12px;
+    }
+    
+    .pdf-dropdown-item {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    .pdf-searchable-dropdown input[type="text"] {
+        font-size: 14px;
+        padding-right: 45px;
+    }
+
+    /* Mobile Excel indicators */
+    .pdf-file-type-indicator,
+    .pdf-multipage-indicator {
+        font-size: 10px;
+        padding: 0.2rem 0.5rem;
+    }
+
+    .pdf-excel-conversion-info {
+        padding: 0.5rem;
+        font-size: 12px;
+    }
+
+    /* Mobile instruction overlay */
+    .pdf-instruction-overlay {
+        bottom: 10px;
+        left: 10px;
+    }
+    
+    .pdf-instruction-overlay div {
+        font-size: 10px;
+        padding: 4px 8px;
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pdf-annotator-container {
+        font-size: 12px;
+    }
+    
+    .pdf-annotation-marker {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+
+    .pdf-file-type-indicator,
+    .pdf-multipage-indicator {
+        display: none; /* Hide on very small screens */
+    }
+
+    /* Very small mobile instruction overlay */
+    .pdf-instruction-overlay {
+        bottom: 8px;
+        left: 8px;
+    }
+    
+    .pdf-instruction-overlay div {
+        font-size: 9px;
+        padding: 3px 6px;
+        max-width: 120px;
+    }
+}
+
+/* Custom scrollbar for better UX */
+.pdf-annotator-container *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.pdf-annotator-container *::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.pdf-annotator-container *::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.pdf-annotator-container *::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Focus styles for accessibility */
+.pdf-button:focus,
+button:focus {
+    outline: 2px solid var(--pdf-primary-color);
+    outline-offset: 2px;
+}
+
+.pdf-form-input:focus,
+.pdf-form-textarea:focus,
+.pdf-selection-type:focus,
+.pdf-richtext-editor:focus {
+    outline: 2px solid var(--pdf-annotation-color);
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .react-pdf__Page {
+        border: 2px solid #000;
+    }
+    
+    .pdf-annotation-marker {
+        border: 4px solid #000;
+    }
+
+    .pdf-dropdown-list {
+        border: 2px solid #000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .pdf-dropdown-item {
+        border-bottom: 1px solid #666;
+    }
+    
+    .pdf-dropdown-item:hover {
+        background-color: #f0f0f0 !important;
+        color: #000 !important;
+    }
+
+    .pdf-excel-conversion-info {
+        border: 2px solid #000;
+        background: #fff;
+        color: #000;
+    }
+
+    .pdf-instruction-overlay div {
+        border: 2px solid #000;
+        background: #fff !important;
+        color: #000 !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .pdf-loading-spinner,
+    .pdf-error-icon,
+    .pdf-annotation-marker,
+    .pdf-button,
+    .pdf-excel-progress-animation,
+    .pdf-instruction-overlay div {
+        animation: none;
+        transition: none;
+    }
+}
+
+/* Print styles */
+@media print {
+    .pdf-annotator-container {
+        background: white !important;
+        border: none !important;
+    }
+    
+    .pdf-loading-state,
+    .pdf-error-state,
+    .pdf-button,
+    .pdf-annotation-marker,
+    .pdf-toolbar,
+    .pdf-annotations-sidebar,
+    .pdf-comment-modal-overlay,
+    .pdf-file-preview-overlay,
+    .pdf-file-type-indicator,
+    .pdf-multipage-indicator,
+    .pdf-excel-conversion-info,
+    .pdf-instruction-overlay {
+        display: none !important;
+    }
+    
+    .react-pdf__Page {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        margin-bottom: 1rem !important;
+        page-break-inside: avoid;
+    }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+    .pdf-annotator-container {
+        background: #1a1a1a;
+        color: #e0e0e0;
+    }
+    
+    .pdf-loading-state,
+    .pdf-error-state {
+        background: #2a2a2a;
+        border-color: #444;
+    }
+    
+    .react-pdf__Page {
+        box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+    }
+
+    .pdf-excel-conversion-info {
+        background: #064e3b;
+        border-color: #34d399;
+        color: #34d399;
+    }
+
+    .pdf-instruction-overlay div {
+        background: rgba(59, 130, 246, 0.9) !important;
+        color: white !important;
+    }
+}

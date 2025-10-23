@@ -1,0 +1,21 @@
+{
+    "presets": [
+      ["@babel/preset-env", {
+        "targets": {
+          "browsers": ["> 1%", "last 2 versions", "not dead"]
+        }
+      }],
+      "@babel/preset-react"
+    ],
+    "plugins": [
+      "@babel/plugin-proposal-class-properties",
+      "@babel/plugin-proposal-object-rest-spread"
+    ],
+    "ignore": [
+      "**/node_modules/pdfjs-dist/**",
+      "**/node_modules/**/pdfjs-dist/**",
+      "node_modules/pdfjs-dist/build/pdf.js",
+      "node_modules/pdfjs-dist/build/pdf.worker.js"
+    ],
+    "compact": false
+  }
