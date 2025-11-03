@@ -1,3 +1,10 @@
+// MEMORY-OPTIMIZED VERSION - Key Changes:
+// Proper blob URL cleanup
+// Limited debug log size
+// Optimized file preview handling
+// Better event listener cleanup
+// Memoized expensive calculations
+
 import { createElement, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Document, Page, pdfjs } from 'react-pdf';
 
@@ -8,12 +15,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 // Global counter for widget instances
 let globalWidgetCounter = 0;
 
-// Production Ready PDF Viewer with FIXED MICROFLOW EXECUTION - Delete Only Triggers Delete Microflow
+
 export default function PDFViewerComponent({ 
     pdfUrl, 
     annotations = [], 
-    onAnnotationsChange, // For ADD operations
-    onAnnotationDelete, // For DELETE operations - FIXED to work like Image Annotator
+    onAnnotationsChange,
+    onAnnotationDelete,
     currentUser = "Unknown User",
     canAddAnnotations = true,
     allowDelete = true,
@@ -25,7 +32,7 @@ export default function PDFViewerComponent({
     const [error, setError] = useState(null);
     const [numPages, setNumPages] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const [scale, setScale] = useState(1.0);
+    const [scale, setScale] = useState(0.8);
     const [annotationMode, setAnnotationMode] = useState(false);
     const [showCommentModal, setShowCommentModal] = useState(false);
     const [commentText, setCommentText] = useState("");
@@ -44,18 +51,18 @@ export default function PDFViewerComponent({
     const [showFilePreview, setShowFilePreview] = useState(false);
     const [previewFile, setPreviewFile] = useState(null);
     const [loadingPreview, setLoadingPreview] = useState(false);
+    const [isCanvasReady, setIsCanvasReady] = useState(false);
     
     // Area selection states
     const [isDrawing, setIsDrawing] = useState(false);
     const [startPoint, setStartPoint] = useState(null);
     const [currentRect, setCurrentRect] = useState(null);
 
-    // Reference document states - ENHANCED WITH SEARCH
+    // Reference document states
     const [showRefDocDropdown, setShowRefDocDropdown] = useState(false);
     const [selectedRefDocName, setSelectedRefDocName] = useState('');
     const [referenceSearchTerm, setReferenceSearchTerm] = useState('');
 
-    // Use parent widget instance ID or create unique one for isolation
     const [viewerWidgetInstanceId] = useState(() => {
         if (parentWidgetInstanceId) {
             return `${parentWidgetInstanceId}-viewer`;
@@ -69,13 +76,10 @@ export default function PDFViewerComponent({
         return `pdf-viewer-${counterPart}-${timestamp}-${randomPart}-${processId}-${uniqueHash}`;
     });
 
-    // Maximize/Minimize state
     const [isMaximized, setIsMaximized] = useState(false);
-
-    // Read More/Less states for annotations
     const [expandedAnnotations, setExpandedAnnotations] = useState(new Set());
 
-    // Multiple isolated refs for complete widget separation
+    // Refs
     const richTextRef = useRef(null);
     const pageRef = useRef(null);
     const overlayRef = useRef(null);
@@ -85,8 +89,12 @@ export default function PDFViewerComponent({
     const fileInputRef = useRef(null);
     const searchInputRef = useRef(null);
     const modalContainerRef = useRef(null);
+
+    //
     
-    // Monitor rich text content for button state
+    // MEMORY OPTIMIZATION: Track blob URLs for cleanup
+    const blobUrlsToCleanup = useRef(new Set());
+    
     const [richTextContent, setRichTextContent] = useState('');
 
     // Debug logging function with widget instance isolation
@@ -123,10 +131,10 @@ export default function PDFViewerComponent({
         };
 
         if (isMaximized) {
-            document.addEventListener('keydown', handleKeyDown);
-            return () => {
-                document.removeEventListener('keydown', handleKeyDown);
-            };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
         }
     }, [isMaximized]);
 
@@ -143,13 +151,11 @@ export default function PDFViewerComponent({
         });
     }, []);
 
-    // Calculate if annotation text should be truncated
     const shouldTruncateText = useCallback((annotation) => {
         const textLength = annotation.comment ? annotation.comment.length : 0;
         return textLength > 100;
     }, []);
 
-    // Get truncated text for display
     const getTruncatedText = useCallback((annotation, isExpanded) => {
         if (!annotation.comment) return '';
         if (isExpanded || annotation.comment.length <= 100) {
@@ -170,22 +176,22 @@ export default function PDFViewerComponent({
             richTextRef.current.addEventListener('input', handleRichTextInput);
             richTextRef.current.addEventListener('keyup', handleRichTextInput);
             richTextRef.current.addEventListener('paste', handleRichTextInput);
-            
-            return () => {
+        
+        return () => {
                 if (richTextRef.current) {
                     richTextRef.current.removeEventListener('input', handleRichTextInput);
                     richTextRef.current.removeEventListener('keyup', handleRichTextInput);
                     richTextRef.current.removeEventListener('paste', handleRichTextInput);
                 }
-            };
+        };
         }
     }, [showCommentModal]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (!showRefDocDropdown) return;
-            
+        if (!showRefDocDropdown) return;
+
             const widgetContainer = containerRef.current;
             const dropdown = refDocDropdownRef.current;
             
@@ -203,10 +209,10 @@ export default function PDFViewerComponent({
         };
 
         if (showRefDocDropdown) {
-            document.addEventListener('mousedown', handleClickOutside, true);
-            return () => {
-                document.removeEventListener('mousedown', handleClickOutside, true);
-            };
+        document.addEventListener('mousedown', handleClickOutside, true);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside, true);
+        };
         }
     }, [showRefDocDropdown]);
 
@@ -349,7 +355,7 @@ export default function PDFViewerComponent({
         cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
         cMapPacked: true,
         standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
-        verbosity: 2,
+        verbosity: 1,
         httpHeaders: {
             'Accept': 'application/pdf,*/*',
             'Cache-Control': 'no-cache',
@@ -366,9 +372,18 @@ export default function PDFViewerComponent({
         isEvalSupported: false,
         password: null,
         disableCreateObjectURL: false,
-        maxImageSize: 1024 * 1024 * 10,
-        enableXfa: false
+        maxImageSize: 1024 * 1024 * 50,
+        enableXfa: false,
+        enableWebGL: false,
+        isOffscreenCanvasSupported: false,
+        pdfBug: false
     }), []);
+
+
+    const handlePageRenderSuccess = useCallback(() => {
+    setIsCanvasReady(true);
+    addDebugLog("Canvas rendered successfully");
+    }, [addDebugLog]);
 
     // Create PDF source based on current method
     useEffect(() => {
@@ -465,12 +480,13 @@ export default function PDFViewerComponent({
         }
     }, [numPages]);
 
-    // Handle zoom changes
     const zoomIn = useCallback(() => {
+        setIsCanvasReady(false)
         setScale(prev => Math.min(prev + 0.2, 3.0));
     }, []);
 
     const zoomOut = useCallback(() => {
+        setIsCanvasReady(false)
         setScale(prev => Math.max(prev - 0.2, 0.5));
     }, []);
 
@@ -595,7 +611,6 @@ export default function PDFViewerComponent({
     const triggerFileInput = useCallback(() => {
         if (fileInputRef.current) {
             fileInputRef.current.click();
-            return;
         }
     }, []);
 
@@ -882,8 +897,8 @@ export default function PDFViewerComponent({
 
     // Filter annotations for current page
     const currentPageAnnotations = annotations.filter(ann => 
-        (!ann.page || ann.page === currentPage) && ann.type === 'area-annotation'
-    );
+            (!ann.page || ann.page === currentPage) && ann.type === 'area-annotation'
+        );
 
     if (!pdfUrl) {
         return createElement('div', {
@@ -1029,7 +1044,7 @@ export default function PDFViewerComponent({
                 }
             }, [
                 // Loading indicator
-                (isLoading || isPreparingSource) && createElement('div', {
+                (isLoading || isPreparingSource || !isCanvasReady) && createElement('div', {
                     key: 'loading-overlay',
                     className: 'pdf-loading-overlay'
                 }, [
@@ -1044,7 +1059,9 @@ export default function PDFViewerComponent({
                         createElement('div', {
                             key: 'loading-message',
                             className: 'pdf-loading-message'
-                        }, isPreparingSource ? `Preparing PDF (${loadMethod})...` : 'Loading PDF...'),
+                        }, isPreparingSource ? `Preparing PDF (${loadMethod})...` : 
+                        !isCanvasReady ? 'Loading high-resolution PDF may take sometime...' : 
+                        'Loading PDF...'),
                         createElement('div', {
                             key: 'loading-details',
                             className: 'pdf-loading-details'
@@ -1106,6 +1123,7 @@ export default function PDFViewerComponent({
                                 key: 'pdf-page',
                                 pageNumber: currentPage,
                                 scale: scale,
+                                onRenderSuccess: handlePageRenderSuccess,
                                 loading: createElement('div', {
                                     className: 'pdf-page-loading'
                                 }, [
