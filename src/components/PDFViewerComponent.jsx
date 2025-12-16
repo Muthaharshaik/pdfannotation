@@ -686,6 +686,35 @@ export default function PDFViewerComponent({
         setShowFilePreview(false);
     }, [previewFile]);
 
+    //Handle uploaded document download
+    const handleDownloadUploadedFile = useCallback(() => {
+        if (!previewFile) return;
+        try {
+          //Recreate Blob from base64
+          const binaryString = atob(previewFile.data)
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i=0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+          }
+        const blob = new Blob([bytes], { type: previewFile.type });
+        const url = URL.createObjectURL(blob);
+        
+        // Create and trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = previewFile.name;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setTimeout(() => URL.revokeObjectURL(url), 100)
+        } catch(error) {
+             console.warn("Download Failed", error)
+        }
+    })
+
     // Handle reference document download
     const handleReferenceDocDownload = useCallback((docId) => {
         const doc = referenceDocList.find(d => String(d.id) === String(docId));
@@ -1954,16 +1983,46 @@ export default function PDFViewerComponent({
                     key: 'file-preview-header',
                     className: 'pdf-file-preview-header'
                 }, [
-                    createElement('h3', {
-                        key: 'file-preview-title',
-                        className: 'pdf-file-preview-title'
-                    }, previewFile.name),
-                    createElement('button', {
-                        key: 'close-preview',
-                        className: 'pdf-file-preview-close pdf-file-preview-close-btn',
-                        onClick: handleCloseFilePreview
-                    }, '×')
-                ]),
+                // Left side - Title and Download button together
+                createElement('div', {
+                    key: 'title-download-group',
+                    style: { 
+                      display: 'flex', 
+                      gap: '16px', 
+                      alignItems: 'center',
+                     flex: 1,
+            minWidth: 0  // Allows flex child to shrink
+        }
+    }, [
+        createElement('h3', {
+            key: 'file-preview-title',
+            className: 'pdf-file-preview-title'  // Uses your existing CSS
+        }, previewFile.name),
+        
+        createElement('button', {
+            key: 'custom-download-btn',
+            onClick: handleDownloadUploadedFile,
+            style: {
+                padding: '8px 16px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0  // Prevents button from shrinking
+            }
+        }, '⬇ Download')
+    ]),
+    
+    // Right side - Close button
+    createElement('button', {
+        key: 'close-preview',
+        className: 'pdf-file-preview-close pdf-file-preview-close-btn',
+        onClick: handleCloseFilePreview
+    }, '×')
+]),
                 
                 createElement('div', {
                     key: 'file-preview-content',
