@@ -249,7 +249,9 @@
     font-weight: 500;
     transition: all 0.2s ease;
 }
-
+.pdf-page-input:focus {
+     border:1px solid #6900ef !important;
+}
 .pdf-button:hover {
     background: color-mix(in srgb, var(--pdf-primary-color) 80%, black 20%);
     transform: translateY(-1px);
@@ -1473,7 +1475,7 @@
 .pdf-page-navigation {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 1rem;
 }
 
 .pdf-page-info {

@@ -341,9 +341,9 @@ export default function Pdfannotations(props) {
             }
 
             addDebugLog("🧪 Testing AWS connection...");
-            
+
             const connectionTest = await s3Downloader.testConnection(awsConfig.bucketName);
-            addDebugLog(`🧪 Connection test: ${connectionTest.success ? 'SUCCESS' : 'FAILED'} - ${connectionTest.message}`);
+                addDebugLog(`🧪 Connection test: ${connectionTest.success ? 'SUCCESS' : 'FAILED'} - ${connectionTest.message}`);
             
             const downloadMessage = fileType === 'pdf' ? 
                 "Downloading PDF file..." : 

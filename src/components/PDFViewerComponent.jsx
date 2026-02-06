@@ -44,6 +44,7 @@ export default function PDFViewerComponent({
     const [processedPdfSource, setProcessedPdfSource] = useState(null);
     const [isPreparingSource, setIsPreparingSource] = useState(false);
     const [editingAnnotation, setEditingAnnotation] = useState(null);
+    const [pageInputValue, setPageInputValue] = useState(1);
     
     // File upload states
     const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -104,6 +105,11 @@ export default function PDFViewerComponent({
         console.log(logEntry);
         setDiagnostics(prev => [...prev, logEntry]);
     }, [viewerWidgetInstanceId]);
+
+    // Add this NEW useEffect right here:
+    useEffect(() => {
+        setPageInputValue(currentPage.toString());
+    }, [currentPage]);
 
     // Widget mount/unmount logging
     useEffect(() => {
@@ -997,26 +1003,86 @@ export default function PDFViewerComponent({
             }, [
                 // Page Navigation
                 createElement('div', {
-                    key: 'page-nav',
-                    className: 'pdf-page-navigation'
-                }, [
-                    createElement('button', {
-                        key: 'prev-btn',
-                        onClick: () => goToPage(currentPage - 1),
-                        disabled: currentPage <= 1,
-                        className: `pdf-button pdf-page-prev-btn ${currentPage <= 1 ? 'disabled' : ''}`
-                    }, '◀'),
-                    createElement('span', {
-                        key: 'page-info',
-                        className: 'pdf-page-info'
-                    }, `${currentPage} / ${numPages || 0}`),
-                    createElement('button', {
-                        key: 'next-btn',
-                        onClick: () => goToPage(currentPage + 1),
-                        disabled: currentPage >= numPages,
-                        className: `pdf-button pdf-page-next-btn ${currentPage >= numPages ? 'disabled' : ''}`
-                    }, '▶')
-                ]),
+                        key: 'page-nav',
+                        className: 'pdf-page-navigation'
+                    }, [
+                        // Previous button
+                        createElement('button', {
+                            key: 'prev-btn',
+                            onClick: () => goToPage(currentPage - 1),
+                            disabled: currentPage <= 1,
+                            className: `pdf-button pdf-page-prev-btn ${currentPage <= 1 ? 'disabled' : ''}`,
+                            title: 'Previous Page (←)'
+                        }, '◀'),
+                        // NEW: Page input field
+                        createElement('div', {
+                            key: 'page-input-container',
+                            className: 'pdf-page-input-container',
+                            style: {
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }
+                        }, [
+                            createElement('input', {
+                                key: 'page-input',
+                                type: 'text',
+                                inputMode: 'numeric',
+                                pattern:'[0-9]*',
+                                value: pageInputValue,
+                                onChange: (e) => {
+                                    const value = e.target.value.replace(/\D/g, '');
+                                    setPageInputValue(value);
+                                },
+                                onKeyDown: (e) => {
+                                if (e.key === 'Enter') {
+                                    const page = Number(pageInputValue);
+                                    if (page >= 1 && page <= numPages) {
+                                        goToPage(page);
+                                    } else {
+                                        setPageInputValue(currentPage.toString())
+                                    }
+                                }
+                                },
+                                onBlur: () => {
+                                    const page = Number(pageInputValue);
+                                    if (page >= 1 && page <= numPages) {
+                                    goToPage(page);
+                                    } else {
+                                    setPageInputValue(currentPage.toString());
+                                    }
+                                },
+                                className: 'pdf-page-input',
+                                style: {
+                                    width: '36px',
+                                    padding: '1px 2px',
+                                    textAlign: 'center',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    fontSize: '14px'
+                                }
+                            }),
+                            createElement('span', {
+                                key: 'page-separator',
+                                className: 'pdf-page-separator',
+                                style: { color: '#666' }
+                            }, '/'),
+                            createElement('span', {
+                                key: 'total-pages',
+                                className: 'pdf-total-pages',
+                                style: { color: '#666', fontWeight: '500' }
+                            }, numPages || 0)
+                        ]),
+                        // Next button
+                        createElement('button', {
+                            key: 'next-btn',
+                            onClick: () => goToPage(currentPage + 1),
+                            disabled: currentPage >= numPages,
+                            className: `pdf-button pdf-page-next-btn ${currentPage >= numPages ? 'disabled' : ''}`,
+                            title: 'Next Page (→)'
+                        }, '▶')
+                    ]),
+ 
 
                 // Zoom Controls
                 createElement('div', {
@@ -1993,36 +2059,36 @@ export default function PDFViewerComponent({
                      flex: 1,
             minWidth: 0  // Allows flex child to shrink
         }
-    }, [
-        createElement('h3', {
-            key: 'file-preview-title',
-            className: 'pdf-file-preview-title'  // Uses your existing CSS
-        }, previewFile.name),
+        }, [
+            createElement('h3', {
+                key: 'file-preview-title',
+                className: 'pdf-file-preview-title'  // Uses your existing CSS
+            }, previewFile.name),
+            
+            createElement('button', {
+                key: 'custom-download-btn',
+                onClick: handleDownloadUploadedFile,
+                style: {
+                    padding: '8px 16px',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0  // Prevents button from shrinking
+                }
+            }, '⬇ Download')
+        ]),
         
+        // Right side - Close button
         createElement('button', {
-            key: 'custom-download-btn',
-            onClick: handleDownloadUploadedFile,
-            style: {
-                padding: '8px 16px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                whiteSpace: 'nowrap',
-                flexShrink: 0  // Prevents button from shrinking
-            }
-        }, '⬇ Download')
+            key: 'close-preview',
+            className: 'pdf-file-preview-close pdf-file-preview-close-btn',
+            onClick: handleCloseFilePreview
+        }, '×')
     ]),
-    
-    // Right side - Close button
-    createElement('button', {
-        key: 'close-preview',
-        className: 'pdf-file-preview-close pdf-file-preview-close-btn',
-        onClick: handleCloseFilePreview
-    }, '×')
-]),
                 
                 createElement('div', {
                     key: 'file-preview-content',
