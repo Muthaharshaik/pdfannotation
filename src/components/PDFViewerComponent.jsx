@@ -193,6 +193,25 @@ export default function PDFViewerComponent({
         }
     }, [showCommentModal]);
 
+useEffect(() => {
+    if (showCommentModal && richTextRef.current) {
+        // Small timeout ensures DOM is fully mounted (portal-safe)
+        setTimeout(() => {
+            richTextRef.current.focus();
+
+            // Optional: move cursor to end (recommended)
+            const range = document.createRange();
+            const selection = window.getSelection();
+
+            range.selectNodeContents(richTextRef.current);
+            range.collapse(false);
+
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }, 50);
+    }
+}, [showCommentModal]);
+
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {

@@ -260,13 +260,12 @@ export default function Pdfannotations(props) {
     // Extract AWS configuration and download document (PDF/DOCX/Excel/CSV)
     useEffect(() => {
         addDebugLog("🔧 Enhanced PDF/DOCX/Excel/CSV Annotations Widget starting...");
-        addDebugLog(`Props status - AccessKey: ${props.awsAccessKey?.status}, SecretKey: ${props.awsSecretKey?.status}, Region: ${props.awsRegion?.status}, SessionToken: ${props.awsSessionToken?.status} ,Bucket: ${props.s3BucketName?.status}, File: ${props.fileName?.status}, User: ${props.userName?.status}`);
+        addDebugLog(`Props status - AccessKey: ${props.awsAccessKey?.status}, SecretKey: ${props.awsSecretKey?.status}, Region: ${props.awsRegion?.status} ,Bucket: ${props.s3BucketName?.status}, File: ${props.fileName?.status}, User: ${props.userName?.status}`);
 
         const isConfigReady = 
             props.awsAccessKey?.status === "available" && props.awsAccessKey?.value &&
             props.awsSecretKey?.status === "available" && props.awsSecretKey?.value &&
             props.awsRegion?.status === "available" && props.awsRegion?.value &&
-            props.awsSessionToken?.status === "available" && props.awsSessionToken?.value && 
             props.s3BucketName?.status === "available" && props.s3BucketName?.value &&
             props.fileName?.status === "available" && props.fileName?.value;
 
@@ -275,7 +274,6 @@ export default function Pdfannotations(props) {
                 accessKeyId: props.awsAccessKey.value.trim(),
                 secretAccessKey: props.awsSecretKey.value.trim(),
                 region: props.awsRegion.value.trim(),
-                sessionToken: props.awsSessionToken.value.trim(),
                 bucketName: props.s3BucketName.value.trim(),
                 fileName: props.fileName.value.trim()
             };
@@ -290,7 +288,6 @@ export default function Pdfannotations(props) {
                 props.awsSecretKey?.status === "loading" ||
                 props.awsRegion?.status === "loading" ||
                 props.s3BucketName?.status === "loading" ||
-                props.awsSessionToken?.status === "loading" ||
                 props.fileName?.status === "loading" ||
                 props.userName?.status === "loading";
 
@@ -305,7 +302,7 @@ export default function Pdfannotations(props) {
                 setIsLoading(false);
             }
         }
-    }, [props.awsAccessKey, props.awsSecretKey, props.awsRegion, props.awsSessionToken, props.s3BucketName, props.fileName, props.userName, addDebugLog]);
+    }, [props.awsAccessKey, props.awsSecretKey, props.awsRegion, props.s3BucketName, props.fileName, props.userName, addDebugLog]);
 
     // Enhanced S3 download with robust Excel/CSV conversion
     const downloadDocumentFromS3Enhanced = useCallback(async (awsConfig) => {
@@ -320,7 +317,6 @@ export default function Pdfannotations(props) {
             const s3Downloader = new SecureS3Downloader(
                 awsConfig.accessKeyId,
                 awsConfig.secretAccessKey,
-                awsConfig.sessionToken,
                 awsConfig.region
             );
 

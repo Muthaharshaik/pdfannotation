@@ -1,10 +1,9 @@
 import CryptoJS from "crypto-js";
 
 export class SecureS3Downloader {
-    constructor(accessKey, secretKey, sessionToken, region) {
+    constructor(accessKey, secretKey, region) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
-        this.sessionToken = sessionToken;
         this.region = region;
         this.retryCount = 0;
         this.maxRetries = 3;
@@ -256,7 +255,6 @@ export class SecureS3Downloader {
             queryParams.set('X-Amz-Credential', `${this.accessKey}/${credentialScope}`);
             queryParams.set('X-Amz-Date', amzDate);
             queryParams.set('X-Amz-Expires', expirationSeconds.toString());
-            queryParams.set("X-Amz-Security-Token", this.sessionToken);
             queryParams.set('X-Amz-SignedHeaders', 'host');
             
             const canonicalQuerystring = queryParams.toString();
@@ -357,8 +355,7 @@ export class SecureS3Downloader {
             return {
                 'Authorization': `${algorithm} Credential=${credential}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
                 'X-Amz-Date': amzDate,
-                'X-Amz-Content-Sha256': 'UNSIGNED-PAYLOAD',
-                'X-Amz-Security-Token': this.sessionToken  
+                'X-Amz-Content-Sha256': 'UNSIGNED-PAYLOAD'
             };
         } catch (error) {
             console.error('Error creating enhanced signed headers:', error);
