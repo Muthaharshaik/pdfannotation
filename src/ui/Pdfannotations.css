@@ -2483,6 +2483,46 @@
     max-width: 250px !important;
 }
 
+/* AI tab bar */
+.pdf-annotator-container .ai-tab-bar {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--pdf-border-color);
+    background: white;
+}
+
+.pdf-annotator-container .ai-tab-btn {
+    flex: 1;
+    padding: 7px 6px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.pdf-annotator-container .ai-tab-btn:hover {
+    color: #374151;
+}
+
+.pdf-annotator-container .ai-tab-btn--active {
+    color: #3B82F6;
+    border-bottom-color: #3B82F6;
+    font-weight: 600;
+    background: white;
+}
+
+.pdf-annotator-container .ai-tab-btn--active.ai-tab-btn--ai {
+    color: #F59E0B;
+    border-bottom-color: #F59E0B;
+}
+
 /* Mobile responsiveness for dropdown */
 @media (max-width: 768px) {
     .pdf-annotator-container {

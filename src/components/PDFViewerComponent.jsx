@@ -26,7 +26,11 @@ export default function PDFViewerComponent({
     allowDelete = true,
     referenceDocuments = [],
     widgetInstanceId: parentWidgetInstanceId,
-    executeMendixAction
+    executeMendixAction,
+    isAI = false,
+    aiAnnotations = [],
+    userRole = '',
+    authorId = ''
 }) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -79,6 +83,8 @@ export default function PDFViewerComponent({
 
     const [isMaximized, setIsMaximized] = useState(false);
     const [expandedAnnotations, setExpandedAnnotations] = useState(new Set());
+    const [activeTab, setActiveTab] = useState('human');
+    const AI_ANNOTATION_COLOR = '#F59E0B';
 
     // Refs
     const richTextRef = useRef(null);
@@ -789,6 +795,8 @@ useEffect(() => {
                 type: 'area-annotation',
                 page: selectedArea?.page || currentPage,
                 createdBy: currentUser,
+                role: userRole || '',
+                authorId: authorId || '',
                 referenceDoc: selectedReferenceDoc,
                 uploadedFiles: uploadedFiles,
                 createdInMaximizedView: isMaximized,
@@ -1326,7 +1334,47 @@ useEffect(() => {
                                     title: `Area annotation by ${annotation.createdBy}: ${annotation.comment}`
                                 });
                             })
-                        ])
+                        ]),
+
+                        // ── AI annotation bounding boxes — only when isAI = true
+                        ...(isAI ? aiAnnotations
+                            .filter(ann => !ann.page || ann.page === currentPage)
+                            .map((annotation) => {
+                                if (!annotation.area) return null;
+                                return createElement('div', {
+                                    key: `ai-area-${annotation.id}`,
+                                    style: {
+                                        position: 'absolute',
+                                        left: `${annotation.area.x}%`,
+                                        top: `${annotation.area.y}%`,
+                                        width: `${annotation.area.width}%`,
+                                        height: `${annotation.area.height}%`,
+                                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                        border: `2px solid ${AI_ANNOTATION_COLOR}`,
+                                        borderRadius: '3px',
+                                        cursor: 'pointer',
+                                        pointerEvents: 'auto'
+                                    },
+                                    onClick: () => handleNavigateToAnnotation(annotation),
+                                    title: `AI: ${annotation.comment}`
+                                }, [
+                                    createElement('div', {
+                                        key: 'ai-label',
+                                        style: {
+                                            position: 'absolute',
+                                            top: '-20px',
+                                            left: '0',
+                                            backgroundColor: AI_ANNOTATION_COLOR,
+                                            color: 'white',
+                                            padding: '1px 6px',
+                                            borderRadius: '4px',
+                                            fontSize: '10px',
+                                            fontWeight: '600',
+                                            whiteSpace: 'nowrap'
+                                        }
+                                    }, 'AI')
+                                ]);
+                            }) : [])
                     ]),
 
                     // Instruction message overlay
@@ -1399,7 +1447,7 @@ useEffect(() => {
                             createElement('span', {
                                 key: 'sidebar-count',
                                 className: 'pdf-sidebar-count pdf-annotations-count'
-                            }, `(${annotations.length})`)
+                            }, `(${isAI && activeTab === 'ai' ? aiAnnotations.length : annotations.length})`)
                         ]),
                         createElement('div', {
                             key: 'sidebar-page-info',
@@ -1407,11 +1455,27 @@ useEffect(() => {
                         }, `Page ${currentPage} / ${numPages}`)
                     ])
                 ]),
-
+                // ── AI tab bar — only when isAI = true
+                isAI ? createElement('div', {
+                    key: 'ai-tab-bar',
+                    className: 'ai-tab-bar'
+                }, [
+                    createElement('button', {
+                        key: 'human-tab',
+                        className: `ai-tab-btn${activeTab === 'human' ? ' ai-tab-btn--active' : ''}`,
+                        onClick: () => setActiveTab('human')
+                    }, 'Annotations'),
+                    createElement('button', {
+                        key: 'ai-tab',
+                        className: `ai-tab-btn${activeTab === 'ai' ? ' ai-tab-btn--active ai-tab-btn--ai' : ''}`,
+                        onClick: () => setActiveTab('ai')
+                    }, 'AI Annotations')
+                ]) : null,
                 createElement('div', {
                     key: 'sidebar-content',
                     className: 'pdf-sidebar-content'
-                }, annotations.length === 0 ? 
+                },     activeTab === 'human' ? (
+    annotations.length === 0 ?
                     createElement('div', {
                         key: 'no-annotations',
                         className: 'pdf-no-annotations'
@@ -1462,6 +1526,18 @@ useEffect(() => {
                                         key: 'annotation-number',
                                         className: 'pdf-annotation-number'
                                     }, `#${index + 1} Page ${annotation.page || 1}`),
+
+                                    annotation.role && createElement('span', {
+                                        key: 'role-badge',
+                                        style:{
+                                                backgroundColor:'#eff6ff',
+                                                color:'#1d4ed8',
+                                                padding: '2px 8px',
+                                                borderRadius: '4px',
+                                                fontSize: '11px',
+                                                fontWeight: '600'
+                                        }
+                                    }, annotation.role),
                                     
                                     isActive && createElement('span', {
                                         key: 'current-badge',
@@ -1629,14 +1705,80 @@ useEffect(() => {
                                         fontWeight: canEdit ? '600' : '500'
                                     }
                                 }, `By: ${annotation.createdBy || 'Unknown User'}${canEdit ? ' (You)' : ''}`),
+                                annotation.role && createElement('span', {
+                                        key: 'role-footer',
+                                        style: {
+                                            fontSize: '11px',
+                                            color: '#1D4ED8',
+                                            fontWeight: '500',
+                                            backgroundColor: '#EFF6FF',
+                                            padding: '1px 6px',
+                                            borderRadius: '4px'
+                                        }
+                                }, annotation.role),
                                 createElement('span', {
                                     key: 'annotation-date',
                                     className: 'pdf-annotation-date'
                                 }, `${new Date(annotation.timestamp).toLocaleDateString()} • ${new Date(annotation.timestamp).toLocaleTimeString()}`)
                             ])
                         ]);
+})
+                ) :
+
+                // ── AI tab content
+                (aiAnnotations.length === 0 ?
+                    createElement('div', {
+                        key: 'no-ai-annotations',
+                        className: 'pdf-no-annotations'
+                    }, [
+                        createElement('div', { key: 'no-ai-icon', className: 'pdf-no-annotations-icon' }, '🤖'),
+                        createElement('p', { key: 'no-ai-text', className: 'pdf-no-annotations-text' }, 'No AI annotations for this asset.')
+                    ]) :
+                    aiAnnotations.map((annotation) => {
+                        const isActive = !annotation.page || annotation.page === currentPage;
+                        return createElement('div', {
+                            key: annotation.id,
+                            className: `pdf-annotation-item ${isActive ? 'current-page' : 'other-page'}`,
+                            onClick: () => handleNavigateToAnnotation(annotation),
+                            style: { borderLeft: `3px solid ${AI_ANNOTATION_COLOR}`, cursor: 'pointer' }
+                        }, [
+                            createElement('div', { key: 'ai-header', className: 'pdf-annotation-header' }, [
+                                createElement('div', { key: 'ai-title', className: 'pdf-annotation-title' }, [
+                                    createElement('span', {
+                                        key: 'ai-badge',
+                                        style: { backgroundColor: '#FEF3C7', color: '#92400E', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }
+                                    }, 'AI Generated'),
+                                    annotation.page && createElement('span', {
+                                        key: 'page-info',
+                                        style: { fontSize: '11px', color: '#6b7280', marginLeft: '6px' }
+                                    }, `Page ${annotation.page}`)
+                                ]),
+                                annotation.role && createElement('span', {
+                                    key: 'role',
+                                    style: { backgroundColor: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }
+                                }, annotation.role)
+                            ]),
+                            createElement('div', { key: 'ai-content', className: 'pdf-annotation-content pdf-annotation-content-consistent' }, [
+                                createElement('p', { key: 'ai-comment', className: 'pdf-annotation-text' },
+                                    annotation.comment || 'AI detected annotation'),
+                                createElement('span', {
+                                    key: 'nav-hint',
+                                    style: { fontSize: '10px', color: '#9ca3af', fontStyle: 'italic' }
+                                }, '🧭 Click to navigate')
+                            ]),
+                            createElement('div', { key: 'ai-footer', className: 'pdf-annotation-footer' }, [
+                                createElement('span', {
+                                    key: 'ai-role',
+                                    style: { fontSize: '11px', color: '#92400E', fontWeight: '500', backgroundColor: '#FEF3C7', padding: '1px 6px', borderRadius: '4px' }
+                                }, annotation.role),
+                                createElement('span', { key: 'ai-time', className: 'pdf-annotation-date' },
+                                    annotation.timestamp ?
+                                        `${new Date(annotation.timestamp).toLocaleDateString()} • ${new Date(annotation.timestamp).toLocaleTimeString()}` : '')
+                            ])
+                        ]);
                     })
                 )
+            )
             ])
         ]),
 

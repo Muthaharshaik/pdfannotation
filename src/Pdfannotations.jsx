@@ -27,6 +27,11 @@ export default function Pdfannotations(props) {
     
     // Reference documents state
     const [referenceDocuments, setReferenceDocuments] = useState([]);
+    // AI annotations state
+    const [aiAnnotations, setAiAnnotations] = useState([]);
+    const [isAI, setIsAI] = useState(false);
+    const [userRole, setUserRole] = useState('');
+    const [authorId, setAuthorId] = useState('');
 
     // ENHANCED: Ultra-unique widget instance ID for microflow isolation
     const [widgetInstanceId] = useState(() => {
@@ -256,6 +261,71 @@ export default function Pdfannotations(props) {
             setReferenceDocuments([]);
         }
     }, [props.referenceDocuments, addDebugLog]);
+
+    // Parse userRole from props
+    useEffect(() => {
+        try {
+            let role = '';
+            if (props.userRole && props.userRole.value !== undefined) {
+                role = props.userRole.value || '';
+            } else if (typeof props.userRole === 'string') {
+                role = props.userRole;
+            }
+            setUserRole(role);
+            addDebugLog(`👤 User role set to: ${role}`);
+        } catch (error) {
+            setUserRole('');
+        }
+    }, [props.userRole, addDebugLog]);
+
+    //Parse AuthorId from props
+    useEffect(() => {
+        try {
+            let id = '';
+            if (props.authorID && props.authorID.value !== undefined) {
+                id = props.authorID.value || ''
+            } else if (typeof props.authorID === 'string') {
+                role = props.authorID;
+            }
+            setAuthorId(id);
+            addDebugLog(`Author ID set to: ${id}`)
+        } catch (error) {
+            setAuthorId('')
+        }
+    },[props.authorID, addDebugLog]);
+
+    // Parse isAIGenerated flag
+    useEffect(() => {
+        const aiFlag = props.isAIGenerated?.value === true;
+        setIsAI(aiFlag);
+        addDebugLog(`🤖 isAI set to: ${aiFlag}`);
+    }, [props.isAIGenerated, addDebugLog]);
+
+    // Parse AI annotations from Mendix attribute (READ ONLY — never written back)
+    useEffect(() => {
+        try {
+            if (!props.isAIGenerated?.value) {
+                setAiAnnotations([]);
+                return;
+            }
+            let data = null;
+            if (props.aiAnnotationsData && props.aiAnnotationsData.value !== undefined) {
+                data = props.aiAnnotationsData.value;
+            } else if (typeof props.aiAnnotationsData === 'string') {
+                data = props.aiAnnotationsData;
+            }
+            if (data && typeof data === 'string' && data.trim() !== '' && data !== '[]') {
+                const parsed = JSON.parse(data);
+                setAiAnnotations(Array.isArray(parsed) ? parsed : []);
+                addDebugLog(`🤖 AI annotations loaded: ${Array.isArray(parsed) ? parsed.length : 0}`);
+            } else {
+                setAiAnnotations([]);
+            }
+        } catch (error) {
+            setAiAnnotations([]);
+            console.error(`[Widget ${widgetInstanceId}] Failed to parse AI annotations:`, error);
+        }
+    }, [props.aiAnnotationsData, props.isAIGenerated, addDebugLog, widgetInstanceId]);
 
     // Extract AWS configuration and download document (PDF/DOCX/Excel/CSV)
     useEffect(() => {
@@ -1030,7 +1100,11 @@ startxref
             allowDelete: props.allowDelete !== false,
             referenceDocuments: referenceDocuments,
             widgetInstanceId: widgetInstanceId,
-            executeMendixAction: executeMendixAction
+            executeMendixAction: executeMendixAction,
+            isAI: isAI,
+            aiAnnotations: aiAnnotations,
+            userRole: userRole,
+            authorId: authorId
         })
     ]);
 }
