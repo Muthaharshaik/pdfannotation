@@ -1104,7 +1104,8 @@ startxref
             isAI: isAI,
             aiAnnotations: aiAnnotations,
             userRole: userRole,
-            authorId: authorId
+            authorId: authorId,
+            allowReply: props.allowReply
         })
     ]);
 }
