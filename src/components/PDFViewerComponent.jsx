@@ -50,6 +50,7 @@ export default function PDFViewerComponent({
     const [isPreparingSource, setIsPreparingSource] = useState(false);
     const [editingAnnotation, setEditingAnnotation] = useState(null);
     const [pageInputValue, setPageInputValue] = useState(1);
+    const [pdfLoadProgress, setPdfLoadProgress] = useState(0);
     
     // File upload states
     const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -104,6 +105,7 @@ export default function PDFViewerComponent({
     const searchInputRef = useRef(null);
     const modalContainerRef = useRef(null);
     const replyInputRef = useRef(null);
+    const renderProgressTimer = useRef(null);
 
     //
     
@@ -334,6 +336,13 @@ useEffect(() => {
         setShowRefDocDropdown(false);
     }, []);
 
+    const handleLoadProgress = useCallback(({ loaded, total }) => {
+        if (total > 0) {
+            const percent = Math.round((loaded / total) * 85);
+            setPdfLoadProgress(percent);
+        }
+    }, []);
+
     // Check if current user can edit/delete an annotation
     const canEditAnnotation = useCallback((annotation) => {
         return annotation.createdBy === currentUser;
@@ -421,8 +430,10 @@ useEffect(() => {
 
 
     const handlePageRenderSuccess = useCallback(() => {
-    setIsCanvasReady(true);
-    addDebugLog("Canvas rendered successfully");
+        clearInterval(renderProgressTimer.current);
+        setPdfLoadProgress(100);
+        setIsCanvasReady(true);
+        addDebugLog("Canvas rendered successfully");
     }, [addDebugLog]);
 
     // Create PDF source based on current method
@@ -433,6 +444,7 @@ useEffect(() => {
         }
 
         setIsPreparingSource(true);
+        setPdfLoadProgress(0)
 
         const preparePDFSource = async () => {
             try {
@@ -451,10 +463,21 @@ useEffect(() => {
 
     // Handle successful PDF load
     const handleDocumentLoadSuccess = useCallback(({ numPages }) => {
-        console.log(`✅ [Viewer ${viewerWidgetInstanceId}] PDF loaded successfully with`, numPages, 'pages');
         setNumPages(numPages);
         setIsLoading(false);
         setError(null);
+        setPdfLoadProgress(90);
+
+        // Slowly animate toward 99% while canvas is rendering
+        renderProgressTimer.current = setInterval(() => {
+            setPdfLoadProgress(prev => {
+                if (prev >= 99) {
+                    clearInterval(renderProgressTimer.current);
+                    return 99;
+                }
+                return prev + 1;
+            });
+        }, 1200); // increments every 400ms: 90→99 takes ~3.6 seconds
     }, [viewerWidgetInstanceId]);
 
     // Enhanced error handler with method fallback
@@ -473,7 +496,7 @@ useEffect(() => {
             setIsLoading(true);
             setProcessedPdfSource(null);
             setIsPreparingSource(false);
-            
+            setPdfLoadProgress(0); 
             return;
         }
         
@@ -521,12 +544,28 @@ useEffect(() => {
     }, [numPages]);
 
     const zoomIn = useCallback(() => {
-        setIsCanvasReady(false)
+        setIsCanvasReady(false);
+        setPdfLoadProgress(90);
+        clearInterval(renderProgressTimer.current);
+        renderProgressTimer.current = setInterval(() => {
+            setPdfLoadProgress(prev => {
+                if (prev >= 99) { clearInterval(renderProgressTimer.current); return 99; }
+                return prev + 1;
+            });
+        }, 1200);
         setScale(prev => Math.min(prev + 0.2, 3.0));
     }, []);
 
     const zoomOut = useCallback(() => {
-        setIsCanvasReady(false)
+        setIsCanvasReady(false);
+        setPdfLoadProgress(90);
+        clearInterval(renderProgressTimer.current);
+        renderProgressTimer.current = setInterval(() => {
+            setPdfLoadProgress(prev => {
+                if (prev >= 99) { clearInterval(renderProgressTimer.current); return 99; }
+                return prev + 1;
+            });
+        }, 1200);
         setScale(prev => Math.max(prev - 0.2, 0.5));
     }, []);
 
@@ -1302,15 +1341,78 @@ useEffect(() => {
                     position: 'relative'
                 }
             }, [
-                // Loading indicator
                 (isLoading || isPreparingSource || !isCanvasReady) && createElement('div', {
                     key: 'loading-overlay',
-                    className: 'pdf-loading-overlay'
+                    className: 'pdf-loading-overlay',
+                    style: {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }
                 }, [
+                    // Spinner — back as original
                     createElement('div', {
                         key: 'loading-spinner',
                         className: 'pdf-loading-spinner'
                     }),
+
+                    // Progress bar — sits between spinner and text
+                    createElement('div', {
+                        key: 'progress-bar-wrapper',
+                        style: {
+                            width: '260px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '6px',
+                            marginTop: '16px',
+                            marginBottom: '4px'
+                        }
+                    }, [
+                        createElement('div', {
+                            key: 'progress-track',
+                            style: {
+                                width: '100%',
+                                height: '8px',
+                                backgroundColor: '#e5e7eb',
+                                borderRadius: '999px',
+                                overflow: 'hidden'
+                            }
+                        }, [
+                            createElement('div', {
+                                key: 'progress-fill',
+                                style: {
+                                    height: '100%',
+                                    width: `${pdfLoadProgress}%`,
+                                    backgroundColor: '#2563eb',
+                                    borderRadius: '999px',
+                                    transition: 'width 0.4s ease'
+                                }
+                            })
+                        ]),
+                        createElement('div', {
+                            key: 'progress-pct-row',
+                            style: {
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                fontSize: '11px',
+                                color: '#6b7280'
+                            }
+                        }, [
+                            createElement('span', {
+                                key: 'phase-label'
+                            },
+                                pdfLoadProgress < 86 ? 'Downloading…' :
+                                pdfLoadProgress < 100 ? 'Rendering canvas…' :
+                                'Done'
+                            ),
+                            createElement('span', {
+                                key: 'pct-label'
+                            }, `${pdfLoadProgress}%`)
+                        ])
+                    ]),
+
+                    // Original loading text — untouched
                     createElement('div', {
                         key: 'loading-text',
                         className: 'pdf-loading-text'
@@ -1318,8 +1420,8 @@ useEffect(() => {
                         createElement('div', {
                             key: 'loading-message',
                             className: 'pdf-loading-message'
-                        }, isPreparingSource ? `Preparing PDF (${loadMethod})...` : 
-                        !isCanvasReady ? 'Loading high-resolution PDF may take sometime...' : 
+                        }, isPreparingSource ? `Preparing PDF (${loadMethod})...` :
+                        !isCanvasReady ? 'Loading high-resolution PDF may take sometime...' :
                         'Loading PDF...'),
                         createElement('div', {
                             key: 'loading-details',
@@ -1364,6 +1466,7 @@ useEffect(() => {
                             file: processedPdfSource,
                             onLoadSuccess: handleDocumentLoadSuccess,
                             onLoadError: handleDocumentLoadError,
+                            onLoadProgress: handleLoadProgress,
                             options: documentOptions,
                             loading: createElement('div', {
                                 className: 'pdf-document-loading'

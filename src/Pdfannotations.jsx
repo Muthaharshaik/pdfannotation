@@ -1,4 +1,4 @@
-import { createElement, useState, useEffect, useCallback } from "react";
+import { createElement, useState, useEffect, useCallback, useRef } from "react";
 import PDFViewerComponent from "./components/PDFViewerComponent";
 import { SecureS3Downloader } from "./utils/s3-downloader";
 import { DocxToPdfConverter } from "./utils/docx-converter";
@@ -48,7 +48,9 @@ export default function Pdfannotations(props) {
     const {
         class: customClassName,
         style: customStyle,
-        tabIndex
+        tabIndex,
+        widgetLogs,
+        onLogEvent
     } = props;
 
     // Combine custom classes with default classes
@@ -65,6 +67,9 @@ export default function Pdfannotations(props) {
         setDebugInfo(prev => [...prev, logEntry]);
     }, [widgetInstanceId]);
 
+    const logEventRef = useRef(null);
+    const logEntriesRef = useRef([]);
+
     // ENHANCED: Execute Mendix microflow with proper error handling (COPIED FROM IMAGE ANNOTATOR)
     const executeMendixAction = useCallback((action, actionName) => {
         if (!action) {
@@ -75,61 +80,102 @@ export default function Pdfannotations(props) {
         addDebugLog(`📞 Executing ${actionName} microflow...`);
         
         try {
-            // Method 1: Check if action has execute method (common pattern)
             if (action && typeof action.execute === 'function') {
                 addDebugLog(`🎯 Calling ${actionName} via execute() method`);
                 action.execute();
                 addDebugLog(`✅ ${actionName} microflow executed successfully via execute()`);
+                if (actionName !== 'onLogEvent') {
+                    logEventRef.current?.('SUCCESS', `Microflow executed: ${actionName}`);
+                }
                 return true;
             }
-            
-            // Method 2: Direct function call
             else if (typeof action === 'function') {
                 addDebugLog(`🎯 Calling ${actionName} as direct function`);
                 action();
                 addDebugLog(`✅ ${actionName} microflow executed successfully as function`);
+                if (actionName !== 'onLogEvent') {
+                    logEventRef.current?.('SUCCESS', `Microflow executed: ${actionName}`);
+                }
                 return true;
             }
-            
-            // Method 3: Check if action is an object with other callable methods
             else if (action && typeof action === 'object') {
                 addDebugLog(`🔍 ${actionName} is object, checking for callable methods`);
-                
-                // Try common Mendix action patterns
                 if (typeof action.call === 'function') {
                     addDebugLog(`🎯 Calling ${actionName} via call() method`);
                     action.call();
                     addDebugLog(`✅ ${actionName} microflow executed successfully via call()`);
+                    if (actionName !== 'onLogEvent') {
+                        logEventRef.current?.('SUCCESS', `Microflow executed: ${actionName}`);
+                    }
                     return true;
                 }
-                
                 if (typeof action.invoke === 'function') {
                     addDebugLog(`🎯 Calling ${actionName} via invoke() method`);
                     action.invoke();
                     addDebugLog(`✅ ${actionName} microflow executed successfully via invoke()`);
+                    if (actionName !== 'onLogEvent') {
+                        logEventRef.current?.('SUCCESS', `Microflow executed: ${actionName}`);
+                    }
                     return true;
                 }
-                
-                // Log available methods for debugging
                 const availableMethods = Object.getOwnPropertyNames(action).filter(prop => typeof action[prop] === 'function');
                 addDebugLog(`🔍 Available methods on ${actionName}: ${availableMethods.join(', ')}`);
             }
-            
             addDebugLog(`❌ ${actionName} action exists but no valid execution method found`);
             addDebugLog(`🔍 ${actionName} type: ${typeof action}, constructor: ${action?.constructor?.name}`);
-            
+            if (actionName !== 'onLogEvent') {
+                logEventRef.current?.('ERROR', `Microflow not executable: ${actionName}`,
+                    `type: ${typeof action} | constructor: ${action?.constructor?.name}`);
+            }
             return false;
-            
         } catch (error) {
             addDebugLog(`❌ Error executing ${actionName} microflow: ${error.message}`);
+            if (actionName !== 'onLogEvent') {
+                logEventRef.current?.('ERROR', `Microflow threw exception: ${actionName}`, error.message);
+            }
             console.error(`[Widget ${widgetInstanceId}] ${actionName} execution error:`, error);
             return false;
         }
-    }, [addDebugLog, widgetInstanceId]);
+    }, [addDebugLog, widgetInstanceId]); // no logEvent dep — uses ref instead
+
+    // ── Structured log shipping to Mendix ──────────────────────────────────────
+    const logEvent = useCallback((level, message, detail = '') => {
+        const consoleMethod = level === 'ERROR' ? 'error' : level === 'WARNING' ? 'warn' : 'log';
+        console[consoleMethod](`[Widget ${widgetInstanceId}] [${level}] ${message}`, detail || '');
+
+        if (!widgetLogs) return;
+
+        try {
+            const entry = {
+                widgetInstanceId, level, message,
+                detail: detail ? String(detail) : undefined,
+                timestamp: new Date().toISOString()
+            };
+            logEntriesRef.current = [...logEntriesRef.current, entry].slice(-200);
+            const jsonString = JSON.stringify(logEntriesRef.current);
+            if (typeof widgetLogs.setValue === 'function') {
+                widgetLogs.setValue(jsonString);
+            } else if (widgetLogs.value !== undefined) {
+                widgetLogs.value = jsonString;
+            }
+            // Fire onLogEvent directly — NOT via executeMendixAction (would be circular)
+            if (onLogEvent && typeof onLogEvent.execute === 'function') {
+                onLogEvent.execute();
+            } else if (typeof onLogEvent === 'function') {
+                onLogEvent();
+            }
+        } catch (err) {
+            console.error(`[Widget ${widgetInstanceId}] logEvent write failed:`, err);
+        }
+    }, [widgetInstanceId, widgetLogs, onLogEvent]); // no executeMendixAction dep
+
+    // ── Keep ref in sync ──────────────────────────────────────────────────────
+    logEventRef.current = logEvent;
 
     // ENHANCED: Widget mount/unmount logging with microflow configuration check
     useEffect(() => {
         console.log(`🚀 [Widget ${widgetInstanceId}] PDF Annotations Widget initialized with FIXED MICROFLOW EXECUTION`);
+        logEventRef.current?.('INFO', 'Widget initialized', `Instance: ${widgetInstanceId}`)
         addDebugLog("=== MICROFLOW CONFIGURATION CHECK ===");
         addDebugLog(`onAnnotationAdd configured: ${!!props.onAnnotationAdd}`);
         addDebugLog(`onAnnotationDelete configured: ${!!props.onAnnotationDelete}`);
@@ -149,6 +195,7 @@ export default function Pdfannotations(props) {
         
         return () => {
             console.log(`🔥 [Widget ${widgetInstanceId}] PDF Annotations Widget unmounted`);
+            logEventRef.current?.('INFO', 'Widget unmounted', `Instance: ${widgetInstanceId}`);
         };
     }, [widgetInstanceId, props.onAnnotationAdd, props.onAnnotationDelete, addDebugLog]);
 
@@ -245,6 +292,7 @@ export default function Pdfannotations(props) {
                     }
                 } catch (parseError) {
                     console.warn('❌ Failed to parse reference documents JSON:', parseError);
+                    logEvent('WARNING', 'Failed to parse reference documents', parseError.message);
                     addDebugLog(`Raw reference documents data that failed to parse: ${docData}`);
                     loadedDocs = [];
                 }
@@ -258,9 +306,10 @@ export default function Pdfannotations(props) {
         } catch (error) {
             addDebugLog(`❌ Error loading reference documents: ${error.message}`);
             console.error('Error loading reference documents:', error);
+            logEvent('ERROR', 'Error loading reference documents', error.message);
             setReferenceDocuments([]);
         }
-    }, [props.referenceDocuments, addDebugLog]);
+    }, [props.referenceDocuments, addDebugLog, logEvent]);
 
     // Parse userRole from props
     useEffect(() => {
@@ -324,8 +373,9 @@ export default function Pdfannotations(props) {
         } catch (error) {
             setAiAnnotations([]);
             console.error(`[Widget ${widgetInstanceId}] Failed to parse AI annotations:`, error);
+            logEvent('WARNING', 'Failed to parse AI annotations', error.message)
         }
-    }, [props.aiAnnotationsData, props.isAIGenerated, addDebugLog, widgetInstanceId]);
+    }, [props.aiAnnotationsData, props.isAIGenerated, addDebugLog, widgetInstanceId, logEvent]);
 
     // Extract AWS configuration and download document (PDF/DOCX/Excel/CSV)
     useEffect(() => {
@@ -383,6 +433,7 @@ export default function Pdfannotations(props) {
         
         try {
             addDebugLog("🚀 Starting enhanced document download with robust conversion...");
+            logEvent('INFO', 'Starting document download', `file: ${awsConfig.fileName} | bucket: ${awsConfig.bucketName}`);
 
             const s3Downloader = new SecureS3Downloader(
                 awsConfig.accessKeyId,
@@ -437,6 +488,7 @@ export default function Pdfannotations(props) {
             );
 
             addDebugLog(`✅ File downloaded successfully - Size: ${result.size} bytes, Type: ${result.contentType}`);
+            logEvent('SUCCESS', 'File downloaded from S3', `size: ${result.size} bytes | type: ${result.contentType}`);
 
             let finalPdfBlob;
 
@@ -497,9 +549,11 @@ export default function Pdfannotations(props) {
             setDownloadProgress(100);
             
             addDebugLog("🎉 Document ready for annotation!");
+            logEvent('SUCCESS', 'Document ready for annotation', `file: ${awsConfig.fileName}`)
 
         } catch (error) {
             addDebugLog(`❌ Document processing failed: ${error.message}`);
+            logEvent('ERROR', 'Document processing failed', error.message);
             console.error("Document processing error:", error);
             
             let userFriendlyError = `Failed to load document: ${error.message}`;
@@ -545,7 +599,7 @@ export default function Pdfannotations(props) {
             setIsLoading(false);
             setDownloadProgress(0);
         }
-    }, [addDebugLog, actualPresignedUrl, pdfUrl]);
+    }, [addDebugLog, actualPresignedUrl, pdfUrl, logEvent]);
 
     // Detect file type from filename
     const detectFileType = useCallback((fileName) => {
@@ -722,6 +776,7 @@ startxref
                     addDebugLog(`✅ Successfully parsed annotations: ${loadedAnnotations.length} items`);
                 } catch (parseError) {
                     console.warn('❌ Failed to parse annotations JSON:', parseError);
+                    logEvent('WARNING', 'Failed to parse PDF annotations JSON', parseError.message);
                     addDebugLog(`Raw annotation data that failed to parse: ${annotationsData}`);
                     loadedAnnotations = [];
                 }
@@ -737,7 +792,7 @@ startxref
             console.error('Error loading annotations:', error);
             setAnnotations([]);
         }
-    }, [props.pdfAnnotations, addDebugLog]);
+    }, [props.pdfAnnotations, addDebugLog, logEvent]);
 
     // ENHANCED: Save annotations to Mendix with proper microflow execution (FOR ADD ONLY)
     const saveAnnotationsToMendix = useCallback((annotationsArray) => {
@@ -755,6 +810,7 @@ startxref
                 addDebugLog("📝 Attempting direct attribute update...");
                 try {
                     props.pdfAnnotations.setValue(jsonString);
+                    logEvent('SUCCESS', 'PDF annotations saved to Mendix', `count: ${annotationsArray.length}`);
                     saveSuccess = true;
                     addDebugLog("✅ Direct attribute update successful");
                 } catch (error) {
@@ -794,11 +850,12 @@ startxref
             
         } catch (error) {
             addDebugLog(`❌ Error saving annotations: ${error.message}`);
+            logEvent('ERROR', 'Failed to save PDF annotations', error.message);
             console.error(`[Widget ${widgetInstanceId}] Error saving annotations:`, error);
         }
         
         addDebugLog("=== END SAVING PDF ANNOTATIONS ===");
-    }, [props.onAnnotationAdd, props.pdfAnnotations, addDebugLog, executeMendixAction, widgetInstanceId]);
+    }, [props.onAnnotationAdd, props.pdfAnnotations, addDebugLog, executeMendixAction, widgetInstanceId, logEvent]);
 
     // Save annotations with improved mechanism (FOR ADD OPERATIONS)
     const handleAnnotationsChange = useCallback((newAnnotations) => {
@@ -810,6 +867,7 @@ startxref
     // FIXED: Handle annotation deletion - EXACTLY LIKE IMAGE ANNOTATOR
     const handleAnnotationDelete = useCallback((deletedAnnotations) => {
         addDebugLog("=== DELETING PDF ANNOTATION ===");
+        logEvent('INFO', 'PDF annotation deleted', `remaining: ${deletedAnnotations.length}`);
         addDebugLog(`Annotations after delete: ${deletedAnnotations.length} items`);
         
         try {
@@ -865,11 +923,12 @@ startxref
             
         } catch (error) {
             addDebugLog(`❌ Error deleting annotation: ${error.message}`);
+            logEvent('ERROR', 'Failed to delete PDF annotation', error.message);
             console.error(`[Widget ${widgetInstanceId}] Error deleting annotation:`, error);
         }
         
         addDebugLog("=== END DELETING PDF ANNOTATION ===");
-    }, [props.onAnnotationDelete, props.pdfAnnotations, addDebugLog, executeMendixAction, widgetInstanceId]);
+    }, [props.onAnnotationDelete, props.pdfAnnotations, addDebugLog, executeMendixAction, widgetInstanceId, logEvent]);
 
     // Cleanup blob URL on unmount
     useEffect(() => {
