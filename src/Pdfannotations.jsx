@@ -154,15 +154,21 @@ export default function Pdfannotations(props) {
             logEntriesRef.current = [...logEntriesRef.current, entry].slice(-200);
             const jsonString = JSON.stringify(logEntriesRef.current);
             if (typeof widgetLogs.setValue === 'function') {
-                widgetLogs.setValue(jsonString);
+                if (widgetLogs.status === "available") {
+                    widgetLogs.setValue(jsonString);
+                } else {
+                    console.warn(`[Widget ${widgetInstanceId}] widgetLogs attribute not available to set value`);
+                }
             } else if (widgetLogs.value !== undefined) {
                 widgetLogs.value = jsonString;
             }
             // Fire onLogEvent directly — NOT via executeMendixAction (would be circular)
-            if (onLogEvent && typeof onLogEvent.execute === 'function') {
-                onLogEvent.execute();
-            } else if (typeof onLogEvent === 'function') {
-                onLogEvent();
+            if (widgetLogs.status === 'available') {  // ← same guard
+                if (onLogEvent && typeof onLogEvent.execute === 'function') {
+                    onLogEvent.execute();
+                } else if (typeof onLogEvent === 'function') {
+                    onLogEvent();
+                }
             }
         } catch (err) {
             console.error(`[Widget ${widgetInstanceId}] logEvent write failed:`, err);
@@ -195,7 +201,6 @@ export default function Pdfannotations(props) {
         
         return () => {
             console.log(`🔥 [Widget ${widgetInstanceId}] PDF Annotations Widget unmounted`);
-            logEventRef.current?.('INFO', 'Widget unmounted', `Instance: ${widgetInstanceId}`);
         };
     }, [widgetInstanceId, props.onAnnotationAdd, props.onAnnotationDelete, addDebugLog]);
 
