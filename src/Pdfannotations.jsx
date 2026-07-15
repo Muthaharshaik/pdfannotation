@@ -149,6 +149,7 @@ export default function Pdfannotations(props) {
             const entry = {
                 widgetInstanceId, level, message,
                 detail: detail ? String(detail) : undefined,
+                fileName: props.fileName?.value || undefined,
                 timestamp: new Date().toISOString()
             };
             logEntriesRef.current = [...logEntriesRef.current, entry].slice(-200);
@@ -173,7 +174,7 @@ export default function Pdfannotations(props) {
         } catch (err) {
             console.error(`[Widget ${widgetInstanceId}] logEvent write failed:`, err);
         }
-    }, [widgetInstanceId, widgetLogs, onLogEvent]); // no executeMendixAction dep
+    }, [widgetInstanceId, widgetLogs, onLogEvent,props.fileName]); // no executeMendixAction dep
 
     // ── Keep ref in sync ──────────────────────────────────────────────────────
     logEventRef.current = logEvent;
